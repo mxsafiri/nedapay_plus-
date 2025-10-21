@@ -213,16 +213,32 @@ model networks {
   id                       BigInt            @id @default(autoincrement())
   created_at               DateTime          @db.Timestamptz(6)
   updated_at               DateTime          @db.Timestamptz(6)
-  chain_id                 BigInt
+  
+  // Generic fields (all networks)
   identifier               String            @unique @db.VarChar
-  rpc_endpoint             String            @db.VarChar
+  network_type             String            @default("evm") @db.VarChar  // "evm" or "hedera"
   is_testnet               Boolean
   fee                      Float
+  block_time               Float             // or consensus_time for Hedera
+  priority                 Int               @default(2)  // 1=highest (Hedera), 2=fallback
+  is_enabled               Boolean           @default(true)
+  
+  // EVM-specific fields (nullable for Hedera)
+  chain_id                 BigInt?
   chain_id_hex             String?           @db.VarChar
-  gateway_contract_address String            @default("") @db.VarChar
+  rpc_endpoint             String?           @db.VarChar
+  gateway_contract_address String?           @db.VarChar
   bundler_url              String?           @db.VarChar
   paymaster_url            String?           @db.VarChar
-  block_time               Float
+  
+  // Hedera-specific fields (nullable for EVM)
+  hedera_network_id        String?           @db.VarChar  // "mainnet", "testnet", "previewnet"
+  mirror_node_url          String?           @db.VarChar
+  hedera_operator_id       String?           @db.VarChar  // For transactions
+  
+  // SDK configuration (protocol-specific)
+  sdk_config               Json?             // Flexible config for any protocol
+  
   payment_webhooks         payment_webhooks?
   tokens                   tokens[]
 
@@ -252,7 +268,11 @@ model payment_orders {
   amount_returned               Float
   sender_fee                    Float
   rate                          Float
-  tx_hash                       String?                   @db.VarChar
+  
+  // Transaction identifiers (flexible for different protocols)
+  tx_hash                       String?                   @db.VarChar  // EVM: "0x...", Hedera: "0.0.123@timestamp"
+  tx_id                         String?                   @db.VarChar  // Alternative for non-EVM chains
+  
   receive_address_text          String                    @db.VarChar
   status                        String                    @default("initiated") @db.VarChar
   api_key_payment_orders        String?                   @db.Uuid
@@ -271,6 +291,9 @@ model payment_orders {
   reference                     String?                   @db.VarChar
   message_hash                  String?                   @db.VarChar
   amount_in_usd                 Float
+  
+  // Network tracking
+  network_used                  String?                   @db.VarChar  // "base-sepolia", "hedera-testnet"
   payment_order_recipients      payment_order_recipients?
   api_keys                      api_keys?                 @relation(fields: [api_key_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_api_keys_payment_orders")
   linked_addresses              linked_addresses?         @relation(fields: [linked_address_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_linked_addresses_payment_orders")
@@ -459,11 +482,19 @@ model tokens {
   created_at            DateTime                @db.Timestamptz(6)
   updated_at            DateTime                @db.Timestamptz(6)
   symbol                String                  @db.VarChar
-  contract_address      String                  @db.VarChar
+  
+  // Token identifier (flexible for different protocols)
+  contract_address      String                  @db.VarChar  // EVM: "0x...", Hedera: "0.0.xxxxx"
+  token_type            String                  @default("erc20") @db.VarChar  // "erc20", "hts", "native"
+  
   decimals              Int                     @db.SmallInt
   is_enabled            Boolean                 @default(false)
   network_tokens        BigInt
   base_currency         String                  @default("USD") @db.VarChar
+  
+  // Protocol-specific metadata
+  token_metadata        Json?                   // For additional protocol-specific data
+  
   lock_payment_orders   lock_payment_orders[]
   payment_orders        payment_orders[]
   provider_order_tokens provider_order_tokens[]
