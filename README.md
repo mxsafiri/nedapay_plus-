@@ -1,6 +1,8 @@
-# NedaPay Integration Dashboard
+# NedaPay Plus
 
 A comprehensive cross-border payment infrastructure dashboard for onramp and offramp transactions. Built with Next.js, Supabase, and TypeScript.
+
+> **Note**: This is an independent fork of the NEDA Labs Dashboard project, customized and enhanced for specific use cases.
 
 ## Features
 
@@ -45,8 +47,8 @@ A comprehensive cross-border payment infrastructure dashboard for onramp and off
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
-cd intergration-dashboard
+git clone <your-repository-url>
+cd nedapay_plus
 ```
 
 ### 2. Verify Node.js version
