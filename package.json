@@ -16,7 +16,9 @@
     "hedera:associate-usdc": "tsx scripts/associate-usdc-token.ts",
     "db:status": "node scripts/db-status.js",
     "db:verify": "node scripts/verify-multichain.js",
-    "routing:test": "tsx scripts/test-routing.ts"
+    "routing:test": "tsx scripts/test-routing.ts",
+    "api:test": "tsx scripts/test-api-endpoints.ts",
+    "test:complete": "tsx scripts/test-complete-system.ts"
   },
   "dependencies": {
     "@hashgraph/sdk": "^2.75.0",
