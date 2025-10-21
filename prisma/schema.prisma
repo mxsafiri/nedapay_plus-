@@ -1,0 +1,538 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas   = ["public"]
+}
+
+model api_keys {
+  id                       String             @id @db.Uuid
+  secret                   String             @unique @db.VarChar
+  provider_profile_api_key String?            @unique @db.VarChar
+  sender_profile_api_key   String?            @unique @db.Uuid
+  provider_profiles        provider_profiles? @relation(fields: [provider_profile_api_key], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "api_keys_provider_profiles_api_key")
+  sender_profiles          sender_profiles?   @relation(fields: [sender_profile_api_key], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "api_keys_sender_profiles_api_key")
+  payment_orders           payment_orders[]
+
+  @@schema("public")
+}
+
+model atlas_schema_revisions {
+  version          String   @id @db.VarChar
+  description      String   @db.VarChar
+  type             BigInt   @default(2)
+  applied          BigInt   @default(0)
+  total            BigInt   @default(0)
+  executed_at      DateTime @db.Timestamptz(6)
+  execution_time   BigInt
+  error            String?
+  error_stmt       String?
+  hash             String   @db.VarChar
+  partial_hashes   Json?
+  operator_version String   @db.VarChar
+
+  @@schema("public")
+}
+
+model beneficial_owners {
+  id                               String       @id @db.Uuid
+  full_name                        String       @db.VarChar
+  residential_address              String       @db.VarChar
+  proof_of_residential_address_url String       @db.VarChar
+  government_issued_id_url         String       @db.VarChar
+  date_of_birth                    String       @db.VarChar
+  ownership_percentage             Float
+  government_issued_id_type        String?      @db.VarChar
+  kyb_profile_beneficial_owners    String       @db.Uuid
+  kyb_profiles                     kyb_profiles @relation(fields: [kyb_profile_beneficial_owners], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "beneficial_owners_kyb_profiles_beneficial_owners")
+
+  @@schema("public")
+}
+
+model ent_types {
+  id   BigInt @id @default(autoincrement())
+  type String @unique @db.VarChar
+
+  @@schema("public")
+}
+
+model fiat_currencies {
+  id                      String                    @id @db.Uuid
+  created_at              DateTime                  @db.Timestamptz(6)
+  updated_at              DateTime                  @db.Timestamptz(6)
+  code                    String                    @unique @db.VarChar
+  short_name              String                    @unique @db.VarChar
+  decimals                BigInt                    @default(2)
+  symbol                  String                    @db.VarChar
+  name                    String                    @db.VarChar
+  market_rate             Float
+  is_enabled              Boolean                   @default(false)
+  fiat_currency_providers fiat_currency_providers[]
+  institutions            institutions[]
+  provider_currencies     provider_currencies[]
+  provider_order_tokens   provider_order_tokens[]
+  provision_buckets       provision_buckets[]
+
+  @@schema("public")
+}
+
+model fiat_currency_providers {
+  fiat_currency_id    String            @db.Uuid
+  provider_profile_id String            @db.VarChar
+  fiat_currencies     fiat_currencies   @relation(fields: [fiat_currency_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  provider_profiles   provider_profiles @relation(fields: [provider_profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([fiat_currency_id, provider_profile_id])
+  @@schema("public")
+}
+
+model identity_verification_requests {
+  id                  String   @id @db.Uuid
+  wallet_address      String   @unique @db.VarChar
+  wallet_signature    String   @unique @db.VarChar
+  platform            String   @db.VarChar
+  platform_ref        String   @db.VarChar
+  verification_url    String   @db.VarChar
+  status              String   @default("pending") @db.VarChar
+  fee_reclaimed       Boolean  @default(false)
+  updated_at          DateTime @db.Timestamptz(6)
+  last_url_created_at DateTime @db.Timestamptz(6)
+
+  @@schema("public")
+}
+
+model institutions {
+  id                         BigInt           @id @default(autoincrement())
+  created_at                 DateTime         @db.Timestamptz(6)
+  updated_at                 DateTime         @db.Timestamptz(6)
+  code                       String           @unique @db.VarChar
+  name                       String           @db.VarChar
+  type                       String           @default("bank") @db.VarChar
+  fiat_currency_institutions String?          @db.Uuid
+  fiat_currencies            fiat_currencies? @relation(fields: [fiat_currency_institutions], references: [id], onUpdate: NoAction, map: "institutions_fiat_currencies_institutions")
+
+  @@schema("public")
+}
+
+model kyb_profiles {
+  id                               String              @id @db.Uuid
+  created_at                       DateTime            @db.Timestamptz(6)
+  updated_at                       DateTime            @db.Timestamptz(6)
+  mobile_number                    String              @db.VarChar
+  company_name                     String              @db.VarChar
+  registered_business_address      String              @db.VarChar
+  certificate_of_incorporation_url String              @db.VarChar
+  articles_of_incorporation_url    String              @db.VarChar
+  business_license_url             String?             @db.VarChar
+  proof_of_business_address_url    String              @db.VarChar
+  aml_policy_url                   String?             @db.VarChar
+  kyc_policy_url                   String?             @db.VarChar
+  kyb_rejection_comment            String?             @db.VarChar
+  user_kyb_profile                 String?             @unique @db.Uuid
+  beneficial_owners                beneficial_owners[]
+  users                            users?              @relation(fields: [user_kyb_profile], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "kyb_profiles_users_kyb_profile")
+
+  @@schema("public")
+}
+
+model linked_addresses {
+  id                            BigInt           @id @default(autoincrement())
+  created_at                    DateTime         @db.Timestamptz(6)
+  updated_at                    DateTime         @db.Timestamptz(6)
+  address                       String           @unique @db.VarChar
+  salt                          Bytes?           @unique
+  institution                   String           @db.VarChar
+  account_identifier            String           @db.VarChar
+  account_name                  String           @db.VarChar
+  owner_address                 String           @unique @db.VarChar
+  last_indexed_block            BigInt?
+  tx_hash                       String?          @db.VarChar
+  sender_profile_linked_address String?          @db.Uuid
+  metadata                      Json?
+  sender_profiles               sender_profiles? @relation(fields: [sender_profile_linked_address], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "linked_addresses_sender_profiles_linked_address")
+  payment_orders                payment_orders[]
+
+  @@schema("public")
+}
+
+model lock_order_fulfillments {
+  id                              String              @id @db.Uuid
+  created_at                      DateTime            @db.Timestamptz(6)
+  updated_at                      DateTime            @db.Timestamptz(6)
+  tx_id                           String?             @unique @db.VarChar
+  validation_status               String              @default("pending") @db.VarChar
+  validation_error                String?             @db.VarChar
+  lock_payment_order_fulfillments String              @db.Uuid
+  psp                             String?             @db.VarChar
+  lock_payment_orders             lock_payment_orders @relation(fields: [lock_payment_order_fulfillments], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "lock_order_fulfillments_lock_payment_orders_fulfillments")
+
+  @@schema("public")
+}
+
+model lock_payment_orders {
+  id                                   String                    @id @db.Uuid
+  created_at                           DateTime                  @db.Timestamptz(6)
+  updated_at                           DateTime                  @db.Timestamptz(6)
+  amount                               Float
+  rate                                 Float
+  order_percent                        Float
+  tx_hash                              String?                   @db.VarChar
+  status                               String                    @default("pending") @db.VarChar
+  block_number                         BigInt
+  institution                          String                    @db.VarChar
+  account_identifier                   String                    @db.VarChar
+  account_name                         String                    @db.VarChar
+  memo                                 String?                   @db.VarChar
+  cancellation_count                   BigInt                    @default(0)
+  cancellation_reasons                 Json
+  provider_profile_assigned_orders     String?                   @db.VarChar
+  provision_bucket_lock_payment_orders BigInt?
+  token_lock_payment_orders            BigInt
+  gateway_id                           String                    @db.VarChar
+  protocol_fee                         Float
+  sender                               String?                   @db.VarChar
+  metadata                             Json?
+  message_hash                         String?                   @db.VarChar
+  amount_in_usd                        Float
+  lock_order_fulfillments              lock_order_fulfillments[]
+  provider_profiles                    provider_profiles?        @relation(fields: [provider_profile_assigned_orders], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "lock_payment_orders_provider_profiles_assigned_orders")
+  provision_buckets                    provision_buckets?        @relation(fields: [provision_bucket_lock_payment_orders], references: [id], onUpdate: NoAction, map: "lock_payment_orders_provision_buckets_lock_payment_orders")
+  tokens                               tokens                    @relation(fields: [token_lock_payment_orders], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "lock_payment_orders_tokens_lock_payment_orders")
+  transaction_logs                     transaction_logs[]
+
+  @@unique([gateway_id, rate, tx_hash, block_number, institution, account_identifier, account_name, memo, token_lock_payment_orders], map: "lockpaymentorder_gateway_id_ra_65d1cd4f9b7a0ff4525b6f2bc506afdc")
+  @@schema("public")
+}
+
+model networks {
+  id                       BigInt            @id @default(autoincrement())
+  created_at               DateTime          @db.Timestamptz(6)
+  updated_at               DateTime          @db.Timestamptz(6)
+  chain_id                 BigInt
+  identifier               String            @unique @db.VarChar
+  rpc_endpoint             String            @db.VarChar
+  is_testnet               Boolean
+  fee                      Float
+  chain_id_hex             String?           @db.VarChar
+  gateway_contract_address String            @default("") @db.VarChar
+  bundler_url              String?           @db.VarChar
+  paymaster_url            String?           @db.VarChar
+  block_time               Float
+  payment_webhooks         payment_webhooks?
+  tokens                   tokens[]
+
+  @@schema("public")
+}
+
+model payment_order_recipients {
+  id                      BigInt         @id @default(autoincrement())
+  institution             String         @db.VarChar
+  account_identifier      String         @db.VarChar
+  account_name            String         @db.VarChar
+  memo                    String?        @db.VarChar
+  provider_id             String?        @db.VarChar
+  payment_order_recipient String         @unique @db.Uuid
+  metadata                Json?
+  payment_orders          payment_orders @relation(fields: [payment_order_recipient], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "payment_order_recipients_payment_orders_recipient")
+
+  @@schema("public")
+}
+
+model payment_orders {
+  id                            String                    @id @db.Uuid
+  created_at                    DateTime                  @db.Timestamptz(6)
+  updated_at                    DateTime                  @db.Timestamptz(6)
+  amount                        Float
+  amount_paid                   Float
+  amount_returned               Float
+  sender_fee                    Float
+  rate                          Float
+  tx_hash                       String?                   @db.VarChar
+  receive_address_text          String                    @db.VarChar
+  status                        String                    @default("initiated") @db.VarChar
+  api_key_payment_orders        String?                   @db.Uuid
+  sender_profile_payment_orders String?                   @db.Uuid
+  token_payment_orders          BigInt
+  from_address                  String?                   @db.VarChar
+  network_fee                   Float
+  fee_percent                   Float
+  fee_address                   String?                   @db.VarChar
+  percent_settled               Float
+  protocol_fee                  Float
+  gateway_id                    String?                   @db.VarChar
+  block_number                  BigInt                    @default(0)
+  return_address                String?                   @db.VarChar
+  linked_address_payment_orders BigInt?
+  reference                     String?                   @db.VarChar
+  message_hash                  String?                   @db.VarChar
+  amount_in_usd                 Float
+  payment_order_recipients      payment_order_recipients?
+  api_keys                      api_keys?                 @relation(fields: [api_key_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_api_keys_payment_orders")
+  linked_addresses              linked_addresses?         @relation(fields: [linked_address_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_linked_addresses_payment_orders")
+  sender_profiles               sender_profiles?          @relation(fields: [sender_profile_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_sender_profiles_payment_orders")
+  tokens                        tokens                    @relation(fields: [token_payment_orders], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "payment_orders_tokens_payment_orders")
+  payment_webhooks              payment_webhooks?
+  receive_addresses             receive_addresses?
+  transaction_logs              transaction_logs[]
+
+  @@schema("public")
+}
+
+model payment_webhooks {
+  id                            String          @id @db.Uuid
+  created_at                    DateTime        @db.Timestamptz(6)
+  updated_at                    DateTime        @db.Timestamptz(6)
+  webhook_id                    String          @db.VarChar
+  webhook_secret                String          @db.VarChar
+  callback_url                  String          @db.VarChar
+  network_payment_webhook       BigInt?         @unique
+  payment_order_payment_webhook String?         @unique @db.Uuid
+  networks                      networks?       @relation(fields: [network_payment_webhook], references: [id], onUpdate: NoAction, map: "payment_webhooks_networks_payment_webhook")
+  payment_orders                payment_orders? @relation(fields: [payment_order_payment_webhook], references: [id], onUpdate: NoAction, map: "payment_webhooks_payment_orders_payment_webhook")
+
+  @@schema("public")
+}
+
+model provider_currencies {
+  id                                   String            @id @db.Uuid
+  available_balance                    Float
+  total_balance                        Float
+  reserved_balance                     Float
+  is_available                         Boolean           @default(true)
+  updated_at                           DateTime          @db.Timestamptz(6)
+  fiat_currency_provider_currencies    String            @db.Uuid
+  provider_profile_provider_currencies String            @db.VarChar
+  fiat_currencies                      fiat_currencies   @relation(fields: [fiat_currency_provider_currencies], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provider_currencies_fiat_currencies_provider_currencies")
+  provider_profiles                    provider_profiles @relation(fields: [provider_profile_provider_currencies], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provider_currencies_provider_profiles_provider_currencies")
+
+  @@unique([provider_profile_provider_currencies, fiat_currency_provider_currencies], map: "providercurrencies_provider_pr_236d8a9c6dae22d91e5ad2a70e016e3e")
+  @@schema("public")
+}
+
+model provider_order_tokens {
+  id                                  BigInt            @id @default(autoincrement())
+  created_at                          DateTime          @db.Timestamptz(6)
+  updated_at                          DateTime          @db.Timestamptz(6)
+  fixed_conversion_rate               Float
+  floating_conversion_rate            Float
+  conversion_rate_type                String            @db.VarChar
+  max_order_amount                    Float
+  min_order_amount                    Float
+  provider_profile_order_tokens       String            @db.VarChar
+  address                             String?           @db.VarChar
+  network                             String            @db.VarChar
+  fiat_currency_provider_order_tokens String            @db.Uuid
+  token_provider_order_tokens         BigInt
+  rate_slippage                       Float
+  fiat_currencies                     fiat_currencies   @relation(fields: [fiat_currency_provider_order_tokens], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provider_order_tokens_fiat_currencies_provider_order_tokens")
+  provider_profiles                   provider_profiles @relation(fields: [provider_profile_order_tokens], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provider_order_tokens_provider_profiles_order_tokens")
+  tokens                              tokens            @relation(fields: [token_provider_order_tokens], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provider_order_tokens_tokens_provider_order_tokens")
+
+  @@unique([network, provider_profile_order_tokens, token_provider_order_tokens, fiat_currency_provider_order_tokens], map: "providerordertoken_network_pro_78d86f7d16ed79216b911727a796323a")
+  @@unique([provider_profile_order_tokens, token_provider_order_tokens, fiat_currency_provider_order_tokens], map: "providerordertoken_provider_pr_6a0d0c64fd46fb967691502cb58fa192")
+  @@schema("public")
+}
+
+model provider_profiles {
+  id                                 String                               @id @db.VarChar
+  trading_name                       String?                              @db.VarChar
+  host_identifier                    String?                              @db.VarChar
+  provision_mode                     String                               @default("auto") @db.VarChar
+  is_active                          Boolean                              @default(false)
+  is_available                       Boolean                              @default(false)
+  updated_at                         DateTime                             @db.Timestamptz(6)
+  visibility_mode                    String                               @default("public") @db.VarChar
+  address                            String?
+  mobile_number                      String?                              @db.VarChar
+  date_of_birth                      DateTime?                            @db.Timestamptz(6)
+  business_name                      String?                              @db.VarChar
+  identity_document_type             String?                              @db.VarChar
+  identity_document                  String?                              @db.VarChar
+  business_document                  String?                              @db.VarChar
+  user_provider_profile              String                               @unique @db.Uuid
+  is_kyb_verified                    Boolean                              @default(false)
+  api_keys                           api_keys?
+  fiat_currency_providers            fiat_currency_providers[]
+  lock_payment_orders                lock_payment_orders[]
+  provider_currencies                provider_currencies[]
+  provider_order_tokens              provider_order_tokens[]
+  users                              users                                @relation(fields: [user_provider_profile], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provider_profiles_users_provider_profile")
+  provider_ratings                   provider_ratings?
+  provision_bucket_provider_profiles provision_bucket_provider_profiles[]
+
+  @@schema("public")
+}
+
+model provider_ratings {
+  id                               BigInt            @id @default(autoincrement())
+  created_at                       DateTime          @db.Timestamptz(6)
+  updated_at                       DateTime          @db.Timestamptz(6)
+  trust_score                      Float
+  provider_profile_provider_rating String            @unique @db.VarChar
+  provider_profiles                provider_profiles @relation(fields: [provider_profile_provider_rating], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "provider_ratings_provider_profiles_provider_rating")
+
+  @@schema("public")
+}
+
+model provision_bucket_provider_profiles {
+  provision_bucket_id BigInt
+  provider_profile_id String            @db.VarChar
+  provider_profiles   provider_profiles @relation(fields: [provider_profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provision_bucket_provider_profiles_provider_profile_id")
+  provision_buckets   provision_buckets @relation(fields: [provision_bucket_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provision_bucket_provider_profiles_provision_bucket_id")
+
+  @@id([provision_bucket_id, provider_profile_id])
+  @@schema("public")
+}
+
+model provision_buckets {
+  id                                 BigInt                               @id @default(autoincrement())
+  min_amount                         Float
+  max_amount                         Float
+  created_at                         DateTime                             @db.Timestamptz(6)
+  fiat_currency_provision_buckets    String                               @db.Uuid
+  lock_payment_orders                lock_payment_orders[]
+  provision_bucket_provider_profiles provision_bucket_provider_profiles[]
+  fiat_currencies                    fiat_currencies                      @relation(fields: [fiat_currency_provision_buckets], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provision_buckets_fiat_currencies_provision_buckets")
+
+  @@schema("public")
+}
+
+model receive_addresses {
+  id                            BigInt          @id @default(autoincrement())
+  created_at                    DateTime        @db.Timestamptz(6)
+  updated_at                    DateTime        @db.Timestamptz(6)
+  address                       String          @unique @db.VarChar
+  salt                          Bytes?          @unique
+  status                        String          @default("unused") @db.VarChar
+  last_indexed_block            BigInt?
+  last_used                     DateTime?       @db.Timestamptz(6)
+  valid_until                   DateTime?       @db.Timestamptz(6)
+  payment_order_receive_address String?         @unique @db.Uuid
+  tx_hash                       String?         @db.VarChar
+  payment_orders                payment_orders? @relation(fields: [payment_order_receive_address], references: [id], onUpdate: NoAction, map: "receive_addresses_payment_orders_receive_address")
+
+  @@schema("public")
+}
+
+model sender_order_tokens {
+  id                          BigInt          @id @default(autoincrement())
+  created_at                  DateTime        @db.Timestamptz(6)
+  updated_at                  DateTime        @db.Timestamptz(6)
+  fee_percent                 Float
+  fee_address                 String          @db.VarChar
+  refund_address              String          @db.VarChar
+  sender_profile_order_tokens String          @db.Uuid
+  token_sender_order_tokens   BigInt
+  sender_profiles             sender_profiles @relation(fields: [sender_profile_order_tokens], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_order_tokens_sender_profiles_order_tokens")
+  tokens                      tokens          @relation(fields: [token_sender_order_tokens], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_order_tokens_tokens_sender_order_tokens")
+
+  @@unique([sender_profile_order_tokens, token_sender_order_tokens], map: "senderordertoken_sender_profil_42c97c0d9385a26fbc0a873a5885486b")
+  @@unique([sender_profile_order_tokens, token_sender_order_tokens], map: "senderordertoken_sender_profil_c0e12093989225f7a56a29b8ff69c3bf")
+  @@schema("public")
+}
+
+model sender_profiles {
+  id                  String                @id @db.Uuid
+  webhook_url         String?               @db.VarChar
+  domain_whitelist    Json
+  is_active           Boolean               @default(false)
+  updated_at          DateTime              @db.Timestamptz(6)
+  user_sender_profile String                @unique @db.Uuid
+  is_partner          Boolean               @default(false)
+  provider_id         String?               @db.VarChar
+  api_keys            api_keys?
+  linked_addresses    linked_addresses[]
+  payment_orders      payment_orders[]
+  sender_order_tokens sender_order_tokens[]
+  users               users                 @relation(fields: [user_sender_profile], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "sender_profiles_users_sender_profile")
+
+  @@schema("public")
+}
+
+model tokens {
+  id                    BigInt                  @id @default(autoincrement())
+  created_at            DateTime                @db.Timestamptz(6)
+  updated_at            DateTime                @db.Timestamptz(6)
+  symbol                String                  @db.VarChar
+  contract_address      String                  @db.VarChar
+  decimals              Int                     @db.SmallInt
+  is_enabled            Boolean                 @default(false)
+  network_tokens        BigInt
+  base_currency         String                  @default("USD") @db.VarChar
+  lock_payment_orders   lock_payment_orders[]
+  payment_orders        payment_orders[]
+  provider_order_tokens provider_order_tokens[]
+  sender_order_tokens   sender_order_tokens[]
+  networks              networks                @relation(fields: [network_tokens], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "tokens_networks_tokens")
+
+  @@schema("public")
+}
+
+model transaction_logs {
+  created_at                      DateTime             @db.Timestamptz(6)
+  gateway_id                      String?              @db.VarChar
+  status                          String               @default("order_initiated") @db.VarChar
+  network                         String?              @db.VarChar
+  tx_hash                         String?              @db.VarChar
+  metadata                        Json
+  id                              String               @id @db.Uuid
+  lock_payment_order_transactions String?              @db.Uuid
+  payment_order_transactions      String?              @db.Uuid
+  lock_payment_orders             lock_payment_orders? @relation(fields: [lock_payment_order_transactions], references: [id], onUpdate: NoAction, map: "transaction_logs_lock_payment_orders_transactions")
+  payment_orders                  payment_orders?      @relation(fields: [payment_order_transactions], references: [id], onUpdate: NoAction, map: "transaction_logs_payment_orders_transactions")
+
+  @@schema("public")
+}
+
+model users {
+  id                      String                @id @db.Uuid
+  created_at              DateTime              @db.Timestamptz(6)
+  updated_at              DateTime              @db.Timestamptz(6)
+  first_name              String                @db.VarChar
+  last_name               String                @db.VarChar
+  email                   String                @unique @db.VarChar
+  password                String                @db.VarChar
+  scope                   String                @db.VarChar
+  is_email_verified       Boolean               @default(false)
+  has_early_access        Boolean               @default(false)
+  kyb_verification_status String                @default("not_started") @db.VarChar
+  kyb_profiles            kyb_profiles?
+  provider_profiles       provider_profiles?
+  sender_profiles         sender_profiles?
+  verification_tokens     verification_tokens[]
+
+  @@unique([email, scope], map: "user_email_scope")
+  @@schema("public")
+}
+
+model verification_tokens {
+  id                      String   @id @db.Uuid
+  created_at              DateTime @db.Timestamptz(6)
+  updated_at              DateTime @db.Timestamptz(6)
+  token                   String   @db.VarChar
+  scope                   String   @db.VarChar
+  expiry_at               DateTime @db.Timestamptz(6)
+  user_verification_token String   @db.Uuid
+  users                   users    @relation(fields: [user_verification_token], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "verification_tokens_users_verification_token")
+
+  @@schema("public")
+}
+
+model webhook_retry_attempts {
+  id              BigInt   @id @default(autoincrement())
+  created_at      DateTime @db.Timestamptz(6)
+  updated_at      DateTime @db.Timestamptz(6)
+  attempt_number  BigInt
+  next_retry_time DateTime @db.Timestamptz(6)
+  payload         Json
+  signature       String?  @db.VarChar
+  webhook_url     String   @db.VarChar
+  status          String   @default("failed") @db.VarChar
+
+  @@schema("public")
+}
