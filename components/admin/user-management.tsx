@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
   Search,
   Building2,
@@ -42,6 +44,9 @@ export function UserManagement() {
   const [resendingEmail, setResendingEmail] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showUserDialog, setShowUserDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [updatingKyb, setUpdatingKyb] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [scopeFilter, setScopeFilter] = useState('all');
   const [verifiedFilter, setVerifiedFilter] = useState('all');
@@ -104,6 +109,69 @@ export function UserManagement() {
       toast.error('Failed to send verification email');
     } finally {
       setResendingEmail(null);
+    }
+  };
+
+  const handleApproveKyb = async (userId: string) => {
+    setUpdatingKyb(true);
+    try {
+      const response = await fetch('/api/admin/users/verify-kyb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, status: 'verified' })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('KYB approved successfully!');
+        fetchUsers(); // Refresh user list
+        setShowUserDialog(false);
+      } else {
+        toast.error(data.error || 'Failed to approve KYB');
+      }
+    } catch (error) {
+      console.error('Error approving KYB:', error);
+      toast.error('Failed to approve KYB');
+    } finally {
+      setUpdatingKyb(false);
+    }
+  };
+
+  const handleRejectKyb = async () => {
+    if (!selectedUser || !rejectReason.trim()) {
+      toast.error('Please provide a reason for rejection');
+      return;
+    }
+
+    setUpdatingKyb(true);
+    try {
+      const response = await fetch('/api/admin/users/verify-kyb', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: selectedUser.id, 
+          status: 'rejected',
+          reason: rejectReason
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('KYB rejected');
+        fetchUsers(); // Refresh user list
+        setShowRejectDialog(false);
+        setShowUserDialog(false);
+        setRejectReason('');
+      } else {
+        toast.error(data.error || 'Failed to reject KYB');
+      }
+    } catch (error) {
+      console.error('Error rejecting KYB:', error);
+      toast.error('Failed to reject KYB');
+    } finally {
+      setUpdatingKyb(false);
     }
   };
 
@@ -320,11 +388,80 @@ export function UserManagement() {
                   </Button>
                 </div>
               )}
+
+              {/* KYB Approval Actions */}
+              {selectedUser.kyb_verification_status === 'pending' && (
+                <div className="pt-4 border-t">
+                  <p className="text-sm font-medium mb-3">KYB Verification Actions</p>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleApproveKyb(selectedUser.id)}
+                      disabled={updatingKyb}
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Approve KYB
+                    </Button>
+                    <Button
+                      onClick={() => setShowRejectDialog(true)}
+                      disabled={updatingKyb}
+                      variant="destructive"
+                      className="flex-1"
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Reject KYB
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowUserDialog(false)}>
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject KYB Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject KYB Verification</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting {selectedUser?.first_name} {selectedUser?.last_name}'s KYB verification
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="reason">Rejection Reason</Label>
+              <Textarea
+                id="reason"
+                placeholder="Enter reason for rejection (required)..."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={4}
+                className="mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRejectDialog(false);
+                setRejectReason('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleRejectKyb}
+              disabled={updatingKyb || !rejectReason.trim()}
+            >
+              {updatingKyb ? 'Rejecting...' : 'Reject KYB'}
             </Button>
           </DialogFooter>
         </DialogContent>

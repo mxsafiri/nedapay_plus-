@@ -28,7 +28,7 @@ export default function ProtectedPage() {
     return null; // Layout will handle redirect
   }
 
-  // Create a simple dashboard user object
+  // Create dashboard user object with role
   const dashboardUser = {
     id: user.id,
     email: user.email,
@@ -41,10 +41,14 @@ export default function ProtectedPage() {
     created_at: new Date().toISOString()
   };
 
+  // Get user role from scope
+  const userRole = user.scope?.toLowerCase();
+
   return (
     <Dashboard 
       user={dashboardUser as any} 
       profile={null}
+      userRole={userRole}
     />
   );
 }

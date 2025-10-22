@@ -65,14 +65,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine scope
-    let scope = 'sender';
-    if (businessTypes.includes('sender') && businessTypes.includes('provider')) {
-      scope = 'sender provider';
-    } else if (businessTypes.includes('provider')) {
-      scope = 'provider';
-    }
+    // Determine scope and role (single selection now)
+    const businessType = businessTypes[0]; // Get first (and only) selection
+    const scope = businessType; // 'sender' or 'provider'
+    
+    // Map business type to user role (B2B2C)
+    // sender → BANK, provider → PSP
+    const role: 'BANK' | 'PSP' = businessType === 'provider' ? 'PSP' : 'BANK';
+    
     console.log('Determined scope:', scope);
+    console.log('Determined role:', role);
 
     // Hash password with error handling
     let hashedPassword;
@@ -132,6 +134,7 @@ export async function POST(request: NextRequest) {
           email: email.toLowerCase().trim(),
           password: hashedPassword,
           scope: scope,
+          role: role, // B2B2C role mapping
           is_email_verified: false,
           has_early_access: true,
           kyb_verification_status: 'not_started',

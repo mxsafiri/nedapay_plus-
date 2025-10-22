@@ -45,7 +45,36 @@ export function ProviderManagement({ initialProviders = [] }: ProviderManagement
   //   sort_order: 'desc'
   // });
 
-  // Mock data for development
+  // Fetch providers from API
+  useEffect(() => {
+    fetchProviders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchProviders = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filters.search) params.append('search', filters.search);
+
+      const response = await fetch(`/api/admin/providers?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setProviders(data.providers);
+      } else {
+        toast.error('Failed to fetch providers');
+      }
+    } catch (error) {
+      console.error('Error fetching providers:', error);
+      toast.error('Failed to fetch providers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // OLD Mock data - replaced with real API
+  /*
   useEffect(() => {
     if (initialProviders.length === 0) {
       const mockProviders: ProviderWithDetails[] = [
@@ -122,6 +151,7 @@ export function ProviderManagement({ initialProviders = [] }: ProviderManagement
       setProviders(mockProviders);
     }
   }, [initialProviders]);
+  */
 
   const handleRevokeProvider = async () => {
     if (!selectedProvider) return;
@@ -167,15 +197,15 @@ export function ProviderManagement({ initialProviders = [] }: ProviderManagement
   };
 
   const getTotalLiquidity = (provider: ProviderWithDetails) => {
-    return provider.provider_currencies.reduce((sum, currency) => sum + currency.total_balance, 0);
+    return provider.provider_currencies?.reduce((sum, currency) => sum + currency.total_balance, 0) || 0;
   };
 
   const getAvailableLiquidity = (provider: ProviderWithDetails) => {
-    return provider.provider_currencies.reduce((sum, currency) => sum + currency.available_balance, 0);
+    return provider.provider_currencies?.reduce((sum, currency) => sum + currency.available_balance, 0) || 0;
   };
 
   const getTrustScore = (provider: ProviderWithDetails) => {
-    return provider.provider_ratings[0]?.trust_score || 0;
+    return provider.provider_ratings?.[0]?.trust_score || 0;
   };
 
   return (
@@ -247,7 +277,7 @@ export function ProviderManagement({ initialProviders = [] }: ProviderManagement
                 <TableRow key={provider.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{provider.trading_name || (provider.user_profile as any).company_name}</div>
+                      <div className="font-medium">{provider.trading_name || 'N/A'}</div>
                       <div className="text-sm text-muted-foreground">@{provider.host_identifier}</div>
                     </div>
                   </TableCell>
@@ -322,10 +352,10 @@ export function ProviderManagement({ initialProviders = [] }: ProviderManagement
                       <CardTitle className="text-lg">Basic Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <div><strong>Trading Name:</strong> {selectedProvider.trading_name}</div>
-                      <div><strong>Company:</strong> {(selectedProvider.user_profile as any).company_name}</div>
-                      <div><strong>Website:</strong> {(selectedProvider.user_profile as any).website}</div>
-                      <div><strong>Country:</strong> {(selectedProvider.user_profile as any).country}</div>
+                      <div><strong>Trading Name:</strong> {selectedProvider.trading_name || 'N/A'}</div>
+                      <div><strong>User:</strong> {((selectedProvider as any).users?.first_name || 'N/A')} {((selectedProvider as any).users?.last_name || '')}</div>
+                      <div><strong>Email:</strong> {(selectedProvider as any).users?.email || 'N/A'}</div>
+                      <div><strong>KYB Status:</strong> {(selectedProvider as any).users?.kyb_verification_status || 'N/A'}</div>
                       <div><strong>Host ID:</strong> @{selectedProvider.host_identifier}</div>
                     </CardContent>
                   </Card>
@@ -351,7 +381,7 @@ export function ProviderManagement({ initialProviders = [] }: ProviderManagement
                     <CardTitle>Currency Balances</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {selectedProvider.provider_currencies.length > 0 ? (
+                    {selectedProvider.provider_currencies?.length > 0 ? (
                       <Table>
                         <TableHeader>
                           <TableRow>
@@ -363,7 +393,7 @@ export function ProviderManagement({ initialProviders = [] }: ProviderManagement
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {selectedProvider.provider_currencies.map((currency) => (
+                          {selectedProvider.provider_currencies?.map((currency) => (
                             <TableRow key={currency.id}>
                               <TableCell>
                                 <div className="flex items-center">

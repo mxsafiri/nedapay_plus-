@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 // GET - Fetch server configurations for a user
 export async function GET(request: NextRequest) {
@@ -11,13 +12,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Get sender profile for the user
-    const senderProfile = await prisma.sender_profiles.findUnique({
+    // Get or create sender profile for the user
+    let senderProfile = await prisma.sender_profiles.findUnique({
       where: { user_sender_profile: userId }
     });
 
+    // Auto-create sender profile if it doesn't exist
     if (!senderProfile) {
-      return NextResponse.json({ error: 'Sender profile not found' }, { status: 404 });
+      senderProfile = await prisma.sender_profiles.create({
+        data: {
+          id: crypto.randomUUID(),
+          user_sender_profile: userId,
+          webhook_url: null,
+          domain_whitelist: [],
+          is_active: true,
+          is_partner: false,
+          provider_id: null,
+          markup_percentage: 0.002, // 0.2% default
+          subscription_tier: 'free',
+          monthly_earnings: 0,
+          total_earnings: 0,
+          updated_at: new Date()
+        }
+      });
     }
 
     return NextResponse.json({

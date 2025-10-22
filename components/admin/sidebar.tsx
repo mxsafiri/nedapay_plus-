@@ -11,11 +11,8 @@ import {
   Building2,
   Send,
   CreditCard,
-  FileText,
   Settings,
-  BarChart3,
   Coins,
-  Webhook,
   Shield,
   Download,
   Activity,
@@ -25,73 +22,55 @@ import {
 const navigation = [
   {
     name: "Dashboard",
-    href: "/protected/admin",
+    href: "/admin",
     icon: LayoutDashboard,
     description: "Overview and statistics"
   },
   {
     name: "Users",
-    href: "/protected/admin/users",
+    href: "/admin/users",
     icon: Users,
     description: "Manage user accounts"
   },
   {
     name: "Providers",
-    href: "/protected/admin/providers",
+    href: "/admin/providers",
     icon: Building2,
     description: "Provider profile management"
   },
   {
     name: "Senders",
-    href: "/protected/admin/senders",
+    href: "/admin/senders",
     icon: Send,
     description: "Sender profile management"
   },
   {
     name: "Payment Orders",
-    href: "/protected/admin/orders",
+    href: "/admin/payment-orders",
     icon: CreditCard,
     description: "Payment order tracking"
   },
   {
     name: "Transactions",
-    href: "/protected/admin/transactions",
+    href: "/admin/transactions",
     icon: Activity,
     description: "Transaction logs and history"
   },
   {
     name: "Currencies & Tokens",
-    href: "/protected/admin/currencies",
+    href: "/admin/currencies",
     icon: Coins,
     description: "Manage supported assets"
   },
   {
-    name: "Liquidity",
-    href: "/protected/admin/liquidity",
-    icon: BarChart3,
-    description: "Provider liquidity management"
-  },
-  {
-    name: "Webhooks",
-    href: "/protected/admin/webhooks",
-    icon: Webhook,
-    description: "Webhook management"
-  },
-  {
-    name: "Audit Logs",
-    href: "/protected/admin/audit",
-    icon: FileText,
-    description: "System audit trail"
-  },
-  {
     name: "Reports",
-    href: "/protected/admin/reports",
+    href: "/admin/reports",
     icon: Download,
     description: "Data export and reports"
   },
   {
     name: "Settings",
-    href: "/protected/admin/settings",
+    href: "/admin/settings",
     icon: Settings,
     description: "System configuration"
   }

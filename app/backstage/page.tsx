@@ -30,7 +30,8 @@ export default function BackstagePage() {
 
       if (data.success) {
         toast.success('Access granted');
-        router.push('/protected/admin');
+        // Use window.location for full page reload to ensure cookie is read
+        window.location.href = '/admin';
       } else {
         toast.error(data.error || 'Invalid password');
         setPassword('');

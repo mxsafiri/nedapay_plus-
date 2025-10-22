@@ -47,7 +47,36 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
   //   sort_order: 'desc'
   // });
 
-  // Mock data for development
+  // Fetch senders from API
+  useEffect(() => {
+    fetchSenders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchSenders = async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (filters.search) params.append('search', filters.search);
+
+      const response = await fetch(`/api/admin/senders?${params}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setSenders(data.senders);
+      } else {
+        toast.error('Failed to fetch senders');
+      }
+    } catch (error) {
+      console.error('Error fetching senders:', error);
+      toast.error('Failed to fetch senders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // OLD Mock data - replaced with real API
+  /*
   useEffect(() => {
     if (initialSenders.length === 0) {
       const mockSenders: SenderWithDetails[] = [
@@ -100,6 +129,7 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
       setSenders(mockSenders);
     }
   }, [initialSenders]);
+  */
 
   const handleRevokeSender = async () => {
     if (!selectedSender) return;
@@ -130,7 +160,7 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
     if (!sender.is_active) {
       return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Inactive</Badge>;
     }
-    if ((sender.user_profile as any).verification_status !== 'verified') {
+    if ((sender as any).users?.kyb_verification_status !== 'verified') {
       return <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" />Pending Verification</Badge>;
     }
     return <Badge className="bg-green-500 hover:bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
@@ -243,8 +273,8 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
                 <TableRow key={sender.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{(sender.user_profile as any).company_name}</div>
-                      <div className="text-sm text-muted-foreground">{(sender.user_profile as any).website}</div>
+                      <div className="font-medium">{(sender as any).users?.first_name} {(sender as any).users?.last_name}</div>
+                      <div className="text-sm text-muted-foreground">{(sender as any).users?.email}</div>
                     </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(sender)}</TableCell>
@@ -267,7 +297,7 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">{sender.payment_orders.length}</div>
+                    <div className="font-medium">{(sender as any).payment_orders?.length || 0}</div>
                   </TableCell>
                   <TableCell>{new Date(sender.updated_at).toLocaleDateString()}</TableCell>
                   <TableCell>
@@ -307,7 +337,7 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
           <DialogHeader>
             <DialogTitle>Sender Details</DialogTitle>
             <DialogDescription>
-              Detailed information for {(selectedSender?.user_profile as any)?.company_name}
+              Detailed information for {(selectedSender as any)?.users?.first_name} {(selectedSender as any)?.users?.last_name}
             </DialogDescription>
           </DialogHeader>
           {selectedSender && (
@@ -326,11 +356,11 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
                       <CardTitle className="text-lg">Basic Information</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <div><strong>Company:</strong> {(selectedSender.user_profile as any).company_name}</div>
-                      <div><strong>Website:</strong> {(selectedSender.user_profile as any).website}</div>
-                      <div><strong>Phone:</strong> {(selectedSender.user_profile as any).phone}</div>
-                      <div><strong>Country:</strong> {(selectedSender.user_profile as any).country}</div>
-                      <div><strong>Address:</strong> {(selectedSender.user_profile as any).address}</div>
+                      <div><strong>User:</strong> {(selectedSender as any).users?.first_name} {(selectedSender as any).users?.last_name}</div>
+                      <div><strong>Email:</strong> {(selectedSender as any).users?.email || 'N/A'}</div>
+                      <div><strong>KYB Status:</strong> {(selectedSender as any).users?.kyb_verification_status || 'N/A'}</div>
+                      <div><strong>Profile ID:</strong> {selectedSender.id}</div>
+                      <div><strong>Active:</strong> {selectedSender.is_active ? 'Yes' : 'No'}</div>
                     </CardContent>
                   </Card>
                   
@@ -341,7 +371,7 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
                     <CardContent className="space-y-2">
                       <div><strong>Status:</strong> {getStatusBadge(selectedSender)}</div>
                       <div><strong>Partner:</strong> {getPartnerBadge(selectedSender.is_partner)}</div>
-                      <div><strong>Verification:</strong> {(selectedSender.user_profile as any).verification_status}</div>
+                      <div><strong>KYB Verification:</strong> {(selectedSender as any).users?.kyb_verification_status || 'N/A'}</div>
                       <div><strong>Webhook:</strong> {getWebhookStatus(selectedSender.webhook_url)}</div>
                       <div><strong>Domains:</strong> {selectedSender.domain_whitelist.length} configured</div>
                     </CardContent>
@@ -427,7 +457,7 @@ export function SenderManagement({ initialSenders = [] }: SenderManagementProps)
           <DialogHeader>
             <DialogTitle>Revoke Sender Profile</DialogTitle>
             <DialogDescription>
-              This will deactivate the sender profile for {(selectedSender?.user_profile as any)?.company_name}
+              This will deactivate the sender profile for {(selectedSender as any)?.users?.first_name} {(selectedSender as any)?.users?.last_name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

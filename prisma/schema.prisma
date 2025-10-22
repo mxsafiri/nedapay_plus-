@@ -294,6 +294,13 @@ model payment_orders {
   
   // Network tracking
   network_used                  String?                   @db.VarChar  // "base-sepolia", "hedera-testnet"
+  
+  // Revenue Tracking (B2B2C)
+  bank_markup                   Float                     @default(0)  // Markup earned by bank
+  psp_commission                Float                     @default(0)  // Commission earned by PSP
+  platform_fee                  Float                     @default(0)  // Platform's share
+  assigned_psp_id               String?                   @db.VarChar  // PSP assigned to fulfill
+  
   payment_order_recipients      payment_order_recipients?
   api_keys                      api_keys?                 @relation(fields: [api_key_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_api_keys_payment_orders")
   linked_addresses              linked_addresses?         @relation(fields: [linked_address_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_linked_addresses_payment_orders")
@@ -379,6 +386,15 @@ model provider_profiles {
   business_document                  String?                              @db.VarChar
   user_provider_profile              String                               @unique @db.Uuid
   is_kyb_verified                    Boolean                              @default(false)
+  
+  // PSP Revenue Tracking (B2B2C)
+  commission_rate                    Float                                @default(0.003)  // Default 0.3% commission
+  supported_countries                Json?                                // Array of country codes
+  monthly_commissions                Float                                @default(0)      // Commissions this month
+  total_commissions                  Float                                @default(0)      // Lifetime commissions
+  fulfillment_count                  Int                                  @default(0)      // Total orders fulfilled
+  treasury_accounts                  Json?                                // Fiat treasury config per currency
+  
   api_keys                           api_keys?
   fiat_currency_providers            fiat_currency_providers[]
   lock_payment_orders                lock_payment_orders[]
@@ -468,6 +484,14 @@ model sender_profiles {
   user_sender_profile String                @unique @db.Uuid
   is_partner          Boolean               @default(false)
   provider_id         String?               @db.VarChar
+  
+  // Bank Revenue Tracking (B2B2C)
+  markup_percentage   Float                 @default(0.002)  // Default 0.2% markup
+  subscription_tier   String                @default("free") @db.VarChar  // "free", "basic", "premium"
+  monthly_earnings    Float                 @default(0)      // Total earnings this month
+  total_earnings      Float                 @default(0)      // Lifetime earnings
+  white_label_config  Json?                 // Branding: logo, colors, name
+  
   api_keys            api_keys?
   linked_addresses    linked_addresses[]
   payment_orders      payment_orders[]
@@ -520,6 +544,14 @@ model transaction_logs {
   @@schema("public")
 }
 
+enum UserRole {
+  BANK      // Banks that submit payment orders
+  PSP       // Payment Service Providers that fulfill orders
+  ADMIN     // Platform administrators
+  
+  @@schema("public")
+}
+
 model users {
   id                      String                @id @db.Uuid
   created_at              DateTime              @db.Timestamptz(6)
@@ -529,6 +561,7 @@ model users {
   email                   String                @unique @db.VarChar
   password                String                @db.VarChar
   scope                   String                @db.VarChar
+  role                    UserRole              @default(BANK)  // User role for platform
   is_email_verified       Boolean               @default(false)
   has_early_access        Boolean               @default(false)
   kyb_verification_status String                @default("not_started") @db.VarChar

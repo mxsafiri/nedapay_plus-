@@ -43,33 +43,84 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Update sender profile
+// POST - Create or update sender profile (supports onboarding)
 export async function POST(request: NextRequest) {
   try {
-    const { userId, webhookUrl, domainWhitelist, isActive, isPartner, providerId } = await request.json();
+    const body = await request.json();
+    const { 
+      userId, 
+      webhookUrl, 
+      domainWhitelist, 
+      isActive, 
+      isPartner, 
+      providerId,
+      // Onboarding fields
+      bankName,
+      country,
+      contactName,
+      contactEmail,
+      contactPhone
+    } = body;
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Update sender profile
-    const senderProfile = await prisma.sender_profiles.update({
-      where: { user_sender_profile: userId },
-      data: {
-        webhook_url: webhookUrl,
-        domain_whitelist: domainWhitelist || [],
-        is_active: isActive ?? true,
-        is_partner: isPartner ?? false,
-        provider_id: providerId,
-        updated_at: new Date()
-      }
+    // Check if profile exists
+    const existingProfile = await prisma.sender_profiles.findUnique({
+      where: { user_sender_profile: userId }
     });
 
-    return NextResponse.json({ success: true, senderProfile });
+    let senderProfile;
+
+    if (existingProfile) {
+      // Update existing profile
+      senderProfile = await prisma.sender_profiles.update({
+        where: { user_sender_profile: userId },
+        data: {
+          webhook_url: webhookUrl,
+          domain_whitelist: domainWhitelist || [],
+          is_active: isActive ?? true,
+          is_partner: isPartner ?? false,
+          provider_id: providerId,
+          updated_at: new Date()
+        }
+      });
+    } else {
+      // Create new profile (onboarding)
+      senderProfile = await prisma.sender_profiles.create({
+        data: {
+          id: crypto.randomUUID(),
+          user_sender_profile: userId,
+          webhook_url: webhookUrl || null,
+          domain_whitelist: domainWhitelist || [],
+          is_active: isActive ?? true,
+          is_partner: isPartner ?? false,
+          provider_id: providerId || null,
+          updated_at: new Date()
+        }
+      });
+
+      // If onboarding data provided, update user info
+      if (bankName || country) {
+        await prisma.users.update({
+          where: { id: userId },
+          data: {
+            updated_at: new Date()
+          }
+        });
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      senderProfile,
+      message: existingProfile ? 'Profile updated' : 'Profile created'
+    });
   } catch (error) {
-    console.error('Error updating sender profile:', error);
+    console.error('Error creating/updating sender profile:', error);
     return NextResponse.json(
-      { error: 'Failed to update sender profile' },
+      { error: 'Failed to process sender profile' },
       { status: 500 }
     );
   }

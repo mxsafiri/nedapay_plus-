@@ -19,7 +19,7 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [businessTypes, setBusinessTypes] = useState<("sender" | "provider")[]>([]);
+  const [businessType, setBusinessType] = useState<"sender" | "provider" | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
@@ -57,8 +57,8 @@ export function SignUpForm({
       return;
     }
 
-    if (businessTypes.length === 0) {
-      setError("Please select at least one business type");
+    if (!businessType) {
+      setError("Please select a business type");
       setIsLoading(false);
       return;
     }
@@ -71,7 +71,7 @@ export function SignUpForm({
 
     try {
       console.log('=== Starting sign-up process ===');
-      console.log('Form data:', { firstName, lastName, email, businessTypes });
+      console.log('Form data:', { firstName, lastName, email, businessType });
       
       // Call server-side API to create user
       const response = await fetch('/api/auth/signup', {
@@ -84,7 +84,7 @@ export function SignUpForm({
           lastName,
           email,
           password,
-          businessTypes
+          businessTypes: [businessType]
         }),
       });
 
@@ -267,30 +267,23 @@ export function SignUpForm({
 
               {/* Business Type */}
               <div className="grid gap-4">
-                <Label className="text-sm font-semibold text-slate-900 dark:text-white">Type of business (select one or both)</Label>
+                <Label className="text-sm font-semibold text-slate-900 dark:text-white">Type of business</Label>
                 <div className="space-y-3">
                   {/* Sender Option */}
                   <div 
                     className={cn(
                       "flex items-start space-x-3 rounded-lg border p-4 cursor-pointer transition-colors",
-                      businessTypes.includes("sender") ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      businessType === "sender" ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                     )}
-                    onClick={() => {
-                      const newChecked = !businessTypes.includes("sender");
-                      if (newChecked) {
-                        setBusinessTypes([...businessTypes, "sender"]);
-                      } else {
-                        setBusinessTypes(businessTypes.filter(type => type !== "sender"));
-                      }
-                    }}
+                    onClick={() => setBusinessType("sender")}
                   >
                     <div className="mt-1">
                       <div className={cn(
-                        "h-4 w-4 shrink-0 rounded-sm border border-primary shadow flex items-center justify-center",
-                        businessTypes.includes("sender") ? "bg-primary text-primary-foreground" : "bg-background"
+                        "h-4 w-4 shrink-0 rounded-full border-2 border-primary shadow flex items-center justify-center",
+                        businessType === "sender" ? "border-blue-500" : "border-gray-300"
                       )}>
-                        {businessTypes.includes("sender") && (
-                          <Check className="h-3 w-3" />
+                        {businessType === "sender" && (
+                          <div className="h-2 w-2 rounded-full bg-blue-500" />
                         )}
                       </div>
                     </div>
@@ -311,24 +304,17 @@ export function SignUpForm({
                   <div 
                     className={cn(
                       "flex items-start space-x-3 rounded-lg border p-4 cursor-pointer transition-colors",
-                      businessTypes.includes("provider") ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                      businessType === "provider" ? "border-blue-500 bg-blue-50 dark:bg-blue-950/20" : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
                     )}
-                    onClick={() => {
-                      const newChecked = !businessTypes.includes("provider");
-                      if (newChecked) {
-                        setBusinessTypes([...businessTypes, "provider"]);
-                      } else {
-                        setBusinessTypes(businessTypes.filter(type => type !== "provider"));
-                      }
-                    }}
+                    onClick={() => setBusinessType("provider")}
                   >
                     <div className="mt-1">
                       <div className={cn(
-                        "h-4 w-4 shrink-0 rounded-sm border border-primary shadow flex items-center justify-center",
-                        businessTypes.includes("provider") ? "bg-primary text-primary-foreground" : "bg-background"
+                        "h-4 w-4 shrink-0 rounded-full border-2 shadow flex items-center justify-center",
+                        businessType === "provider" ? "border-blue-500" : "border-gray-300"
                       )}>
-                        {businessTypes.includes("provider") && (
-                          <Check className="h-3 w-3" />
+                        {businessType === "provider" && (
+                          <div className="h-2 w-2 rounded-full bg-blue-500" />
                         )}
                       </div>
                     </div>

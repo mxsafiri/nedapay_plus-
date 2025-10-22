@@ -32,30 +32,11 @@ interface SettingsPageProps {
 
 export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState("profile");
-  const [currentProfile, setCurrentProfile] = useState<"sender" | "provider">("sender");
-
-  useEffect(() => {
-    // Get current profile from localStorage or user metadata
-    const savedProfile = localStorage.getItem("activeProfile") as "sender" | "provider";
-    if (savedProfile) {
-      setCurrentProfile(savedProfile);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Handle tab switching when profile changes
-    if (currentProfile === "provider") {
-      // If provider is on sender-only tabs, redirect to profile
-      if (activeTab === "server" || activeTab === "trading") {
-        setActiveTab("profile");
-      }
-    } else if (currentProfile === "sender") {
-      // If sender is on provider tab, redirect to trading
-      if (activeTab === "provider") {
-        setActiveTab("trading");
-      }
-    }
-  }, [currentProfile, activeTab]);
+  
+  // Get user role from profile or metadata (single role now)
+  const userRole = user.user_metadata?.role || profile?.role || 'sender';
+  const isSender = userRole === 'sender' || userRole === 'BANK';
+  const isProvider = userRole === 'provider' || userRole === 'PSP';
 
   return (
     <div className="flex-1 p-8 md:p-10">
@@ -84,7 +65,7 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
               <span className="font-medium">Profile</span>
             </button>
             
-            {currentProfile === "sender" ? (
+            {isSender ? (
               <button
                 onClick={() => setActiveTab("trading")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
@@ -110,7 +91,7 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
               </button>
             )}
             
-            {currentProfile === "sender" && (
+            {isSender && (
               <button
                 onClick={() => setActiveTab("server")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
@@ -171,20 +152,20 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
         </TabsContent>
 
         {/* Sender-Only Settings */}
-        {currentProfile === "sender" && (
+        {isSender && (
           <TabsContent value="trading" className="space-y-8 mt-0">
             <SenderTradingConfigurations />
           </TabsContent>
         )}
 
-        {currentProfile === "sender" && (
+        {isSender && (
           <TabsContent value="server" className="space-y-8 mt-0">
             <SenderServerConfigurations userId={user.id} />
           </TabsContent>
         )}
 
         {/* Provider-Only Settings */}
-        {currentProfile === "provider" && (
+        {isProvider && (
           <TabsContent value="provider" className="space-y-8 mt-0">
             <ProviderLiquidityConfigurations userId={user.id} />
           </TabsContent>

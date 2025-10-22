@@ -45,9 +45,11 @@ export async function POST(request: NextRequest) {
 
     console.log('Successful admin login at:', new Date().toISOString());
 
+    // Return redirect URL for client-side navigation
     return NextResponse.json({
       success: true,
-      message: 'Authentication successful'
+      message: 'Authentication successful',
+      redirect: '/admin'
     });
   } catch (error) {
     console.error('Admin login error:', error);

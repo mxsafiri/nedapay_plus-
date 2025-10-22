@@ -38,6 +38,13 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     address: profile?.address || "",
     country: profile?.country || "",
   });
+  const [kybFiles, setKybFiles] = useState<{
+    incorporation: File | null;
+    license: File | null;
+  }>({
+    incorporation: null,
+    license: null,
+  });
 
   const supabase = createClient();
 
@@ -65,6 +72,62 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     } catch (error) {
       console.error('Error updating profile:', error);
       toast.error("Failed to update profile");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'incorporation' | 'license') => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File size must be less than 10MB");
+        return;
+      }
+      
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        toast.error("Only PDF, JPG, and PNG files are allowed");
+        return;
+      }
+
+      setKybFiles(prev => ({ ...prev, [type]: file }));
+      toast.success(`${type === 'incorporation' ? 'Certificate' : 'License'} selected: ${file.name}`);
+    }
+  };
+
+  const handleKYBSubmit = async () => {
+    if (!kybFiles.incorporation || !kybFiles.license) {
+      toast.error("Please upload both required documents");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const formData = new FormData();
+      formData.append('incorporation', kybFiles.incorporation);
+      formData.append('license', kybFiles.license);
+
+      const response = await fetch('/api/kyb/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to upload documents');
+      }
+
+      const result = await response.json();
+      toast.success("Documents uploaded successfully! Verification in progress.");
+      
+      // Refresh profile to show updated status
+      window.location.reload();
+    } catch (error) {
+      console.error('Error uploading KYB documents:', error);
+      toast.error(error instanceof Error ? error.message : "Failed to upload documents");
     } finally {
       setIsUpdating(false);
     }
@@ -223,44 +286,110 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
         </CardContent>
       </Card>
 
-      {/* Verification Status */}
+      {/* KYB Document Upload */}
       <Card className="border-none shadow-sm bg-gradient-to-br from-background to-muted/20 rounded-2xl overflow-hidden">
         <CardHeader className="pb-6 pt-6 px-6 bg-muted/30 border-b border-border/50">
           <CardTitle className="flex items-center gap-3 text-xl font-semibold">
             <div className="p-2 bg-primary/10 rounded-lg">
               <Shield className="h-5 w-5 text-primary" />
             </div>
-            Account Verification
+            KYB Verification
           </CardTitle>
         </CardHeader>
         <CardContent className="px-6 pb-6 pt-6">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="flex items-center justify-between p-5 bg-muted/40 border border-border/30 rounded-xl">
               <div className="flex items-center gap-4">
                 <div className={`w-3 h-3 rounded-full ${
-                  profile?.verification_status === "verified" ? "bg-green-500" :
-                  profile?.verification_status === "pending" ? "bg-yellow-500" :
+                  profile?.verification_status === "verified" || profile?.kyb_verification_status === "approved" ? "bg-green-500" :
+                  profile?.verification_status === "pending" || profile?.kyb_verification_status === "pending" ? "bg-yellow-500" :
                   "bg-gray-400"
                 }`}></div>
                 <div>
-                  <p className="font-semibold text-base">Identity Verification</p>
+                  <p className="font-semibold text-base">Business Verification Status</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Verify your identity to access all platform features
+                    {profile?.kyb_verification_status === "approved" ? "Your business is verified" :
+                     profile?.kyb_verification_status === "pending" ? "Verification in progress" :
+                     "Upload documents to verify your business"}
                   </p>
                 </div>
               </div>
-              {getStatusBadge(profile?.verification_status)}
+              {getStatusBadge(profile?.kyb_verification_status || profile?.verification_status)}
             </div>
 
-            {profile?.verification_status !== "verified" && (
-              <div className="bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-xl p-6">
-                <h4 className="font-bold text-base mb-2">Complete Your Verification</h4>
-                <p className="text-sm text-muted-foreground mb-4">
-                  To access all features and increase your transaction limits, please complete the verification process.
-                </p>
-                <Button className="h-10 px-6 text-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-md hover:shadow-lg transition-all">
-                  Start Verification
-                </Button>
+            {(profile?.verification_status !== "verified" && profile?.kyb_verification_status !== "approved") && (
+              <div className="space-y-4">
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6">
+                  <h4 className="font-bold text-base mb-2">📄 Required Documents</h4>
+                  <ul className="text-sm text-muted-foreground space-y-2 mb-4">
+                    <li>• Certificate of Incorporation</li>
+                    <li>• Business License</li>
+                    <li>• Proof of Business Address (optional)</li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground">
+                    Accepted formats: PDF, JPG, PNG • Max size: 10MB per file
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="incorporation" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Certificate of Incorporation *
+                    </Label>
+                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        id="incorporation"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'incorporation')}
+                      />
+                      <label htmlFor="incorporation" className="cursor-pointer">
+                        <div className="text-muted-foreground">
+                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="text-sm font-medium">Click to upload</p>
+                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="license" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Business License *
+                    </Label>
+                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        id="license"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'license')}
+                      />
+                      <label htmlFor="license" className="cursor-pointer">
+                        <div className="text-muted-foreground">
+                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="text-sm font-medium">Click to upload</p>
+                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <Button 
+                    onClick={handleKYBSubmit}
+                    disabled={isUpdating}
+                    className="h-11 px-8 text-sm bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-md hover:shadow-lg transition-all"
+                  >
+                    {isUpdating ? "Uploading..." : "Submit for Verification"}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
