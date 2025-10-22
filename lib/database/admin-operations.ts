@@ -214,24 +214,41 @@ export async function updateUserVerificationStatus(
   adminId: string,
   reason?: string
 ): Promise<void> {
-  const supabase = createAdminClient();
-
   try {
-    // Update user verification status
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ 
-        kyb_verification_status: status,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', userId);
+    console.log('🔄 Updating KYB status:', { userId, status, adminId });
 
-    if (updateError) throw updateError;
+    // Update user verification status using Prisma
+    await prisma.users.update({
+      where: { id: userId },
+      data: { 
+        kyb_verification_status: status,
+        updated_at: new Date()
+      }
+    });
+
+    console.log('✅ User KYB status updated to:', status);
+
+    // If verified, also update provider profile KYB status
+    if (status === 'verified') {
+      try {
+        await prisma.provider_profiles.updateMany({
+          where: { user_provider_profile: userId },
+          data: {
+            is_kyb_verified: true,
+            updated_at: new Date()
+          }
+        });
+        console.log('✅ Provider profile KYB status updated');
+      } catch (providerError) {
+        console.warn('⚠️ No provider profile to update:', providerError);
+        // Not critical - user might not be a provider
+      }
+    }
 
     // Log the admin action in transaction_logs
-    await supabase
-      .from('transaction_logs')
-      .insert({
+    await prisma.transaction_logs.create({
+      data: {
+        id: `txlog_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         status: 'order_initiated',
         metadata: {
           action_type: status === 'verified' ? 'verify_user' : 'reject_user',
@@ -240,11 +257,15 @@ export async function updateUserVerificationStatus(
           reason,
           new_status: status
         },
-        created_at: new Date().toISOString()
-      });
+        created_at: new Date()
+      }
+    });
+
+    console.log('✅ Admin action logged');
 
   } catch (error) {
-    console.error('Error updating user verification status:', error);
+    console.error('❌ Error updating user verification status:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
     throw error;
   }
 }

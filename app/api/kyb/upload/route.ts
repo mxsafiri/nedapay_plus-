@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getUserFromRequest } from '@/lib/auth/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
@@ -8,12 +8,13 @@ import crypto from 'crypto';
 // POST - Upload KYB documents
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUserFromRequest(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    console.log('📤 KYB Upload - User authenticated:', { id: user.id, email: user.email });
 
     const formData = await request.formData();
     const incorporation = formData.get('incorporation') as File | null;
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
     // Create uploads directory if it doesn't exist
     const uploadsDir = path.join(process.cwd(), 'uploads', 'kyb', user.id);
     await mkdir(uploadsDir, { recursive: true });
+    console.log('📁 Upload directory created:', uploadsDir);
 
     const documents: Record<string, string> = {};
 
@@ -43,6 +45,7 @@ export async function POST(request: NextRequest) {
       await writeFile(incorporationPath, incorporationBuffer);
       
       documents.incorporation = incorporationPath;
+      console.log('✅ Incorporation certificate saved:', incorporationFilename);
     }
 
     // Save business license
@@ -55,6 +58,7 @@ export async function POST(request: NextRequest) {
       await writeFile(licensePath, licenseBuffer);
       
       documents.license = licensePath;
+      console.log('✅ Business license saved:', licenseFilename);
     }
 
     // Check if KYB profile exists
@@ -66,6 +70,7 @@ export async function POST(request: NextRequest) {
 
     if (existingKYB) {
       // Update existing KYB profile
+      console.log('🔄 Updating existing KYB profile for user:', user.id);
       kybProfile = await prisma.kyb_profiles.update({
         where: { user_kyb_profile: user.id },
         data: {
@@ -74,8 +79,10 @@ export async function POST(request: NextRequest) {
           updated_at: new Date()
         }
       });
+      console.log('✅ KYB profile updated');
     } else {
       // Create new KYB profile
+      console.log('➕ Creating new KYB profile for user:', user.id);
       kybProfile = await prisma.kyb_profiles.create({
         data: {
           id: crypto.randomUUID(),
@@ -91,16 +98,23 @@ export async function POST(request: NextRequest) {
           updated_at: new Date()
         }
       });
+      console.log('✅ KYB profile created');
     }
 
     // Update user KYB status
-    await prisma.users.update({
-      where: { id: user.id },
-      data: {
-        kyb_verification_status: 'pending',
-        updated_at: new Date()
-      }
-    });
+    try {
+      await prisma.users.update({
+        where: { id: user.id },
+        data: {
+          kyb_verification_status: 'pending',
+          updated_at: new Date()
+        }
+      });
+      console.log('✅ KYB status updated to pending for user:', user.id);
+    } catch (updateError) {
+      console.error('❌ Failed to update KYB status:', updateError);
+      // Continue anyway - don't fail the whole upload
+    }
 
     // If PSP and supported countries provided, update provider profile
     if (supportedCountriesStr) {
@@ -125,11 +139,13 @@ export async function POST(request: NextRequest) {
       message: 'Documents uploaded successfully. KYB verification pending.'
     });
   } catch (error) {
-    console.error('Error uploading KYB documents:', error);
+    console.error('❌ Error uploading KYB documents:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
       { 
         error: 'Failed to upload documents',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
+        type: error instanceof Error ? error.constructor.name : typeof error
       },
       { status: 500 }
     );
@@ -139,8 +155,7 @@ export async function POST(request: NextRequest) {
 // GET - Get KYB status
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUserFromRequest(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

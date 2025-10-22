@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getUserFromRequest } from '@/lib/auth/server';
 import crypto from 'crypto';
 
 // GET - Get provider profile for a user
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUserFromRequest(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -34,14 +33,19 @@ export async function GET(request: NextRequest) {
 // POST - Create or update provider profile (supports onboarding)
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    console.log('📥 POST /api/provider-profile - Starting...');
+    const user = await getUserFromRequest(request);
 
     if (!user) {
+      console.error('❌ No user found in request');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('✅ User authenticated:', user.id);
+
     const body = await request.json();
+    console.log('📦 Request body:', body);
+    
     const {
       pspName,
       tradingName,
@@ -52,31 +56,45 @@ export async function POST(request: NextRequest) {
       businessName,
       provisionMode,
       visibilityMode,
-      isActive
+      isActive,
+      website,
+      country
     } = body;
 
     // Check if profile exists
+    console.log('🔍 Checking if profile exists for user:', user.id);
     const existingProfile = await prisma.provider_profiles.findUnique({
       where: { user_provider_profile: user.id }
     });
+
+    console.log('Existing profile:', existingProfile ? 'Found' : 'Not found');
 
     let providerProfile;
 
     if (existingProfile) {
       // Update existing profile
+      console.log('🔄 Updating existing profile...');
+      const updateData = {
+        trading_name: tradingName || existingProfile.trading_name,
+        business_name: businessName || pspName || existingProfile.business_name,
+        mobile_number: contactPhone || mobileNumber || existingProfile.mobile_number,
+        address: address || existingProfile.address,
+        website: website !== undefined ? website : existingProfile.website,
+        country: country !== undefined ? country : existingProfile.country,
+        provision_mode: provisionMode || existingProfile.provision_mode,
+        visibility_mode: visibilityMode || existingProfile.visibility_mode,
+        is_active: isActive ?? existingProfile.is_active,
+        updated_at: new Date()
+      };
+      
+      console.log('Update data:', updateData);
+      
       providerProfile = await prisma.provider_profiles.update({
         where: { user_provider_profile: user.id },
-        data: {
-          trading_name: tradingName || existingProfile.trading_name,
-          business_name: businessName || pspName || existingProfile.business_name,
-          mobile_number: contactPhone || mobileNumber || existingProfile.mobile_number,
-          address: address || existingProfile.address,
-          provision_mode: provisionMode || existingProfile.provision_mode,
-          visibility_mode: visibilityMode || existingProfile.visibility_mode,
-          is_active: isActive ?? existingProfile.is_active,
-          updated_at: new Date()
-        }
+        data: updateData
       });
+      
+      console.log('✅ Profile updated successfully');
     } else {
       // Create new profile (onboarding)
       const profileId = crypto.randomUUID();
@@ -89,6 +107,8 @@ export async function POST(request: NextRequest) {
           business_name: businessName || pspName,
           mobile_number: contactPhone || mobileNumber || null,
           address: address || null,
+          website: website || null,
+          country: country || null,
           provision_mode: provisionMode || 'auto',
           visibility_mode: visibilityMode || 'public',
           is_active: isActive ?? true,
@@ -104,15 +124,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    console.log('✅ Returning success response');
     return NextResponse.json({
       success: true,
       providerProfile,
       message: existingProfile ? 'Profile updated' : 'Profile created'
     });
   } catch (error) {
-    console.error('Error creating/updating provider profile:', error);
+    console.error('❌ Error creating/updating provider profile:', error);
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     return NextResponse.json(
-      { error: 'Failed to process provider profile' },
+      { 
+        error: 'Failed to process provider profile',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        type: error instanceof Error ? error.constructor.name : typeof error
+      },
       { status: 500 }
     );
   }
@@ -121,8 +148,7 @@ export async function POST(request: NextRequest) {
 // PATCH - Update specific fields (for onboarding steps)
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUserFromRequest(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

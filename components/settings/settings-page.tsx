@@ -33,10 +33,13 @@ interface SettingsPageProps {
 export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState("profile");
   
-  // Get user role from profile or metadata (single role now)
-  const userRole = user.user_metadata?.role || profile?.role || 'sender';
-  const isSender = userRole === 'sender' || userRole === 'BANK';
-  const isProvider = userRole === 'provider' || userRole === 'PSP';
+  // Get user role from profile, metadata, or scope field (single role now)
+  const userRole = user.user_metadata?.role || profile?.role || (user as any).scope?.toLowerCase() || 'sender';
+  const isSender = userRole === 'sender' || userRole === 'bank';
+  const isProvider = userRole === 'provider' || userRole === 'psp';
+  
+  // Debug log
+  console.log('Settings Page - User Role:', userRole, 'isSender:', isSender, 'isProvider:', isProvider);
 
   return (
     <div className="flex-1 p-8 md:p-10">

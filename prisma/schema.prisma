@@ -379,6 +379,8 @@ model provider_profiles {
   visibility_mode                    String                               @default("public") @db.VarChar
   address                            String?
   mobile_number                      String?                              @db.VarChar
+  website                            String?                              @db.VarChar
+  country                            String?                              @db.VarChar
   date_of_birth                      DateTime?                            @db.Timestamptz(6)
   business_name                      String?                              @db.VarChar
   identity_document_type             String?                              @db.VarChar

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,8 @@ interface ProfileSettingsProps {
 export function ProfileSettings({ user, profile: initialProfile }: ProfileSettingsProps) {
   const [profile, setProfile] = useState(initialProfile);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [userRole, setUserRole] = useState<string>('');
+  const [kybStatus, setKybStatus] = useState<string>('not_started');
   const [formData, setFormData] = useState({
     company_name: profile?.company_name || "",
     website: profile?.website || "",
@@ -48,6 +50,88 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
 
   const supabase = createClient();
 
+  // Detect user role and fetch fresh KYB status on mount
+  useEffect(() => {
+    const role = (user as any).user_metadata?.role || (user as any).scope?.toLowerCase() || 'sender';
+    setUserRole(role);
+    
+    // Fetch fresh KYB status and profile data from API
+    fetchKYBStatus();
+    fetchProfileData();
+  }, [user]);
+
+  const fetchProfileData = async () => {
+    try {
+      const isProvider = userRole === 'provider' || userRole === 'psp' || (user as any).scope?.toLowerCase() === 'provider' || (user as any).scope?.toLowerCase() === 'psp';
+      const apiEndpoint = isProvider ? '/api/provider-profile' : '/api/sender-profile';
+
+      const response = await fetch(apiEndpoint, {
+        method: 'GET',
+        headers: {
+          'x-user-id': user.id,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const profileData = data.providerProfile || data;
+        
+        // Update form with existing data
+        setFormData({
+          company_name: profileData.trading_name || profileData.company_name || "",
+          website: profileData.website || "",
+          phone: profileData.mobile_number || profileData.phone || "",
+          address: profileData.address || "",
+          country: profileData.country || "",
+        });
+        
+        console.log('✅ Profile data loaded:', profileData);
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+    }
+  };
+
+  const fetchKYBStatus = async () => {
+    try {
+      const response = await fetch('/api/kyb/upload', {
+        method: 'GET',
+        headers: {
+          'x-user-id': user.id,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const status = data.status || 'not_started';
+        setKybStatus(status);
+        console.log('✅ Fresh KYB status fetched:', status);
+        
+        // Update localStorage with fresh status
+        try {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            const userData = JSON.parse(userStr);
+            userData.kyb_verification_status = status;
+            localStorage.setItem('user', JSON.stringify(userData));
+            console.log('✅ localStorage updated with fresh KYB status');
+          }
+        } catch (storageError) {
+          console.warn('Could not update localStorage:', storageError);
+        }
+      } else {
+        // Fallback to user object if API fails
+        const status = (user as any).kyb_verification_status || 'not_started';
+        setKybStatus(status);
+        console.log('⚠️ Using cached KYB status:', status);
+      }
+    } catch (error) {
+      console.error('Error fetching KYB status:', error);
+      const status = (user as any).kyb_verification_status || 'not_started';
+      setKybStatus(status);
+    }
+  };
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
@@ -58,20 +142,47 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
   const updateProfile = async () => {
     setIsUpdating(true);
     try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .update(formData)
-        .eq('id', user.id)
-        .select()
-        .single();
+      // Determine which profile API to call based on role
+      const isProvider = userRole === 'provider' || userRole === 'psp';
+      const apiEndpoint = isProvider ? '/api/provider-profile' : '/api/sender-profile';
 
-      if (error) throw error;
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': user.id, // Send user ID for custom auth
+        },
+        body: JSON.stringify({
+          tradingName: formData.company_name,
+          contactEmail: user.email,
+          contactPhone: formData.phone,
+          address: formData.address,
+          website: formData.website,
+          country: formData.country,
+        }),
+      });
 
+      if (!response.ok) {
+        console.error('❌ Response not OK:', response.status, response.statusText);
+        let error;
+        try {
+          error = await response.json();
+        } catch (parseError) {
+          console.error('❌ Could not parse error response:', parseError);
+          error = { error: `Server error: ${response.status} ${response.statusText}` };
+        }
+        console.error('❌ API Error:', error);
+        const errorMessage = error.details || error.error || `Failed to update profile (${response.status})`;
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
       setProfile(data);
       toast.success("Profile updated successfully");
     } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error("Failed to update profile");
+      console.error('❌ Error updating profile:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update profile";
+      toast.error(errorMessage);
     } finally {
       setIsUpdating(false);
     }
@@ -112,6 +223,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
 
       const response = await fetch('/api/kyb/upload', {
         method: 'POST',
+        headers: {
+          'x-user-id': user.id, // Send user ID for custom auth
+        },
         body: formData,
       });
 
@@ -123,8 +237,8 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
       const result = await response.json();
       toast.success("Documents uploaded successfully! Verification in progress.");
       
-      // Refresh profile to show updated status
-      window.location.reload();
+      // Refresh KYB status
+      await fetchKYBStatus();
     } catch (error) {
       console.error('Error uploading KYB documents:', error);
       toast.error(error instanceof Error ? error.message : "Failed to upload documents");
@@ -250,15 +364,19 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                   <SelectValue placeholder="Select your country" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="US">United States</SelectItem>
-                  <SelectItem value="CA">Canada</SelectItem>
-                  <SelectItem value="GB">United Kingdom</SelectItem>
-                  <SelectItem value="DE">Germany</SelectItem>
-                  <SelectItem value="FR">France</SelectItem>
-                  <SelectItem value="JP">Japan</SelectItem>
-                  <SelectItem value="AU">Australia</SelectItem>
-                  <SelectItem value="SG">Singapore</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="TZ">🇹🇿 Tanzania</SelectItem>
+                  <SelectItem value="KE">🇰🇪 Kenya</SelectItem>
+                  <SelectItem value="NG">🇳🇬 Nigeria</SelectItem>
+                  <SelectItem value="CN">🇨🇳 China</SelectItem>
+                  <SelectItem value="UG">🇺🇬 Uganda</SelectItem>
+                  <SelectItem value="RW">🇷🇼 Rwanda</SelectItem>
+                  <SelectItem value="ZA">🇿🇦 South Africa</SelectItem>
+                  <SelectItem value="GH">🇬🇭 Ghana</SelectItem>
+                  <SelectItem value="SG">🇸🇬 Singapore</SelectItem>
+                  <SelectItem value="AE">🇦🇪 UAE</SelectItem>
+                  <SelectItem value="GB">🇬🇧 United Kingdom</SelectItem>
+                  <SelectItem value="US">🇺🇸 United States</SelectItem>
+                  <SelectItem value="other">🌍 Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -301,23 +419,23 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
             <div className="flex items-center justify-between p-5 bg-muted/40 border border-border/30 rounded-xl">
               <div className="flex items-center gap-4">
                 <div className={`w-3 h-3 rounded-full ${
-                  profile?.verification_status === "verified" || profile?.kyb_verification_status === "approved" ? "bg-green-500" :
-                  profile?.verification_status === "pending" || profile?.kyb_verification_status === "pending" ? "bg-yellow-500" :
+                  kybStatus === "verified" ? "bg-green-500" :
+                  kybStatus === "pending" ? "bg-yellow-500" :
                   "bg-gray-400"
                 }`}></div>
                 <div>
                   <p className="font-semibold text-base">Business Verification Status</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {profile?.kyb_verification_status === "approved" ? "Your business is verified" :
-                     profile?.kyb_verification_status === "pending" ? "Verification in progress" :
+                    {kybStatus === "verified" ? "Your business is verified ✅" :
+                     kybStatus === "pending" ? "Verification in progress" :
                      "Upload documents to verify your business"}
                   </p>
                 </div>
               </div>
-              {getStatusBadge(profile?.kyb_verification_status || profile?.verification_status)}
+              {getStatusBadge(kybStatus)}
             </div>
 
-            {(profile?.verification_status !== "verified" && profile?.kyb_verification_status !== "approved") && (
+            {kybStatus !== "verified" && (
               <div className="space-y-4">
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-6">
                   <h4 className="font-bold text-base mb-2">📄 Required Documents</h4>
