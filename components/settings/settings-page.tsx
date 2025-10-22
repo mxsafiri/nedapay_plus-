@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ApiKeyManager, ProfileSettings } from "./shared";
 
 // Sender-specific components
-import { SenderTradingConfigurations, SenderServerConfigurations } from "./sender";
+import { SenderTradingConfigurations, SenderServerConfigurations, RevenueSettings } from "./sender";
 
 // Provider-specific components
 import { ProviderLiquidityConfigurations } from "./provider";
@@ -21,7 +21,8 @@ import {
   Bell, 
   Shield,
   TrendingUp,
-  Server
+  Server,
+  DollarSign
 } from "lucide-react";
 
 interface SettingsPageProps {
@@ -70,15 +71,15 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
             
             {isSender ? (
               <button
-                onClick={() => setActiveTab("trading")}
+                onClick={() => setActiveTab("revenue")}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-                  activeTab === "trading"
+                  activeTab === "revenue"
                     ? "bg-[#6366F1] text-white shadow-lg"
                     : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                 }`}
               >
-                <TrendingUp className="h-5 w-5" />
-                <span className="font-medium">Trading</span>
+                <DollarSign className="h-5 w-5" />
+                <span className="font-medium">Revenue</span>
               </button>
             ) : (
               <button
@@ -156,8 +157,8 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
 
         {/* Sender-Only Settings */}
         {isSender && (
-          <TabsContent value="trading" className="space-y-8 mt-0">
-            <SenderTradingConfigurations />
+          <TabsContent value="revenue" className="space-y-8 mt-0">
+            <RevenueSettings userId={user.id} />
           </TabsContent>
         )}
 

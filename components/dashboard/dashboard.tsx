@@ -31,6 +31,8 @@ export function Dashboard({ user, userRole }: DashboardProps) {
   const userName = user?.email?.split('@')[0] || 'User';
   const [networkStatus, setNetworkStatus] = useState<any>(null);
   const [savingsData, setSavingsData] = useState<any>(null);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentGifIndex, setCurrentGifIndex] = useState(0);
 
@@ -49,10 +51,48 @@ export function Dashboard({ user, userRole }: DashboardProps) {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch multi-chain data
+  // Fetch multi-chain data and user stats
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Get user ID from localStorage
+        const userStr = localStorage.getItem('user');
+        const currentUser = userStr ? JSON.parse(userStr) : null;
+        
+        if (!currentUser) {
+          console.error('No user found in localStorage');
+          setLoading(false);
+          return;
+        }
+
+        // Refresh user data to get latest KYB status
+        try {
+          const refreshRes = await fetch('/api/user/refresh', {
+            headers: { 'x-user-id': currentUser.id }
+          });
+          if (refreshRes.ok) {
+            const refreshData = await refreshRes.json();
+            const freshUser = refreshData.user;
+            currentUser.kyb_verification_status = freshUser.kyb_verification_status;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            console.log('✅ User data refreshed with KYB status:', freshUser.kyb_verification_status);
+          }
+        } catch (refreshError) {
+          console.warn('Could not refresh user data:', refreshError);
+        }
+
+        // Fetch dashboard stats
+        const statsRes = await fetch('/api/dashboard/stats', {
+          headers: {
+            'x-user-id': currentUser.id
+          }
+        });
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setDashboardStats(statsData.data);
+          console.log('✅ Dashboard stats loaded:', statsData.data);
+        }
+
         // Fetch network status
         const statusRes = await fetch('/api/networks/status');
         if (statusRes.ok) {
@@ -76,13 +116,43 @@ export function Dashboard({ user, userRole }: DashboardProps) {
     fetchData();
   }, []);
 
+  // Fetch transactions when switching to transactions tab
+  useEffect(() => {
+    if (activeTab === 'transactions' && transactions.length === 0) {
+      fetchTransactions();
+    }
+  }, [activeTab]);
+
+  const fetchTransactions = async () => {
+    try {
+      const userStr = localStorage.getItem('user');
+      const currentUser = userStr ? JSON.parse(userStr) : null;
+      
+      if (!currentUser) return;
+
+      const response = await fetch('/api/dashboard/transactions?limit=20', {
+        headers: {
+          'x-user-id': currentUser.id
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setTransactions(data.data.transactions || []);
+        console.log('✅ Transactions loaded:', data.data.transactions?.length || 0);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  };
+
   // Role-specific stats
   const getStatsForRole = () => {
     if (userRole === 'provider' || userRole === 'psp') {
       return [
         {
           title: "Total Liquidity",
-          value: "$0.00",
+          value: dashboardStats ? `$${dashboardStats.liquidity.toFixed(2)}` : "$0.00",
           subtitle: "Available funds",
           icon: Wallet,
           color: "bg-purple-50 dark:bg-purple-950/20",
@@ -90,15 +160,15 @@ export function Dashboard({ user, userRole }: DashboardProps) {
         },
         {
           title: "Earnings",
-          value: "$0.00",
+          value: dashboardStats ? `$${dashboardStats.earnings.toFixed(2)}` : "$0.00",
           subtitle: "Commission earned",
-          icon: TrendingDown,
+          icon: Coins,
           color: "bg-green-50 dark:bg-green-950/20",
           iconColor: "text-green-600 dark:text-green-400"
         },
         {
           title: "Orders Fulfilled",
-          value: "0",
+          value: dashboardStats ? dashboardStats.ordersThisMonth.toString() : "0",
           subtitle: "Last 30 days",
           icon: Activity,
           color: "bg-blue-50 dark:bg-blue-950/20",
@@ -109,7 +179,7 @@ export function Dashboard({ user, userRole }: DashboardProps) {
       return [
         {
           title: "Total Sent",
-          value: "$0.00",
+          value: dashboardStats ? `$${dashboardStats.monthlyVolume.toFixed(2)}` : "$0.00",
           subtitle: "Last 30 days",
           icon: ArrowUpRight,
           color: "bg-orange-50 dark:bg-orange-950/20",
@@ -117,7 +187,7 @@ export function Dashboard({ user, userRole }: DashboardProps) {
         },
         {
           title: "Active Orders",
-          value: "0",
+          value: dashboardStats ? dashboardStats.activeOrders.toString() : "0",
           subtitle: "Pending payments",
           icon: Clock,
           color: "bg-yellow-50 dark:bg-yellow-950/20",
@@ -125,9 +195,9 @@ export function Dashboard({ user, userRole }: DashboardProps) {
         },
         {
           title: "Revenue",
-          value: "$0.00",
+          value: dashboardStats ? `$${dashboardStats.monthlyRevenue.toFixed(2)}` : "$0.00",
           subtitle: "Markup earned",
-          icon: TrendingDown,
+          icon: Coins,
           color: "bg-green-50 dark:bg-green-950/20",
           iconColor: "text-green-600 dark:text-green-400"
         }
@@ -395,15 +465,15 @@ export function Dashboard({ user, userRole }: DashboardProps) {
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             <Plus className="w-5 h-5 mr-2.5 relative z-10" strokeWidth={3} />
-                            <span className="relative z-10">Add Liquidity</span>
+                            <span className="relative z-10">Configure Liquidity</span>
                           </Button>
                           <Button 
                             className="h-14 px-8 text-base font-bold rounded-2xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-black/90 hover:from-slate-700/90 hover:via-slate-800/90 hover:to-black/90 text-white border border-white/20 backdrop-blur-xl relative overflow-hidden group"
-                            onClick={() => window.location.href = '/protected/settings'}
+                            onClick={() => setActiveTab('transactions')}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            <Network className="w-5 h-5 mr-2.5 relative z-10" />
-                            <span className="relative z-10">Configure Node</span>
+                            <Activity className="w-5 h-5 mr-2.5 relative z-10" />
+                            <span className="relative z-10">View Orders</span>
                           </Button>
                         </div>
                       </>
@@ -437,15 +507,15 @@ export function Dashboard({ user, userRole }: DashboardProps) {
                         <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                           <Button 
                             className="h-14 px-8 text-base font-bold rounded-2xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-600 hover:from-blue-600 hover:via-blue-700 hover:to-cyan-700 text-white border-0 backdrop-blur-xl relative overflow-hidden group"
-                            onClick={() => window.location.href = '/protected/settings'}
+                            onClick={() => window.location.href = '/protected/docs'}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             <ArrowUpRight className="w-5 h-5 mr-2.5 relative z-10" />
-                            <span className="relative z-10">Send Payment</span>
+                            <span className="relative z-10">API Integration</span>
                           </Button>
                           <Button 
                             className="h-14 px-8 text-base font-bold rounded-2xl shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105 bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-black/90 hover:from-slate-700/90 hover:via-slate-800/90 hover:to-black/90 text-white border border-white/20 backdrop-blur-xl relative overflow-hidden group"
-                            onClick={() => window.location.href = '/protected/settings'}
+                            onClick={() => setActiveTab('transactions')}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             <Activity className="w-5 h-5 mr-2.5 relative z-10" />
@@ -483,18 +553,18 @@ export function Dashboard({ user, userRole }: DashboardProps) {
                         <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                           <Button 
                             className="h-14 px-8 text-base font-bold rounded-2xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 text-white border-0 backdrop-blur-xl relative overflow-hidden group"
-                            onClick={() => window.location.href = '/protected/settings'}
+                            onClick={() => window.location.href = '/protected/docs'}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             <Zap className="w-5 h-5 mr-2.5 relative z-10" />
-                            <span className="relative z-10">Start Building</span>
+                            <span className="relative z-10">View API Docs</span>
                           </Button>
                           <Button 
                             className="h-14 px-8 text-base font-bold rounded-2xl shadow-2xl hover:shadow-slate-500/50 transition-all duration-300 hover:scale-105 bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-black/90 hover:from-slate-700/90 hover:via-slate-800/90 hover:to-black/90 text-white border border-white/20 backdrop-blur-xl relative overflow-hidden group"
-                            onClick={() => window.open('https://apinedapay.vercel.app/', '_blank')}
+                            onClick={() => window.location.href = '/protected/settings'}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-slate-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            <span className="relative z-10">Documentation</span>
+                            <span className="relative z-10">Generate API Key</span>
                             <ArrowRight className="w-5 h-5 ml-2.5 relative z-10" />
                           </Button>
                         </div>
@@ -512,15 +582,66 @@ export function Dashboard({ user, userRole }: DashboardProps) {
                 <CardTitle className="text-xl font-semibold">Recent Transactions</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="text-center py-16">
-                  <div className="w-16 h-16 bg-muted/60 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                    <Activity className="w-8 h-8 text-muted-foreground" />
+                {transactions.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 bg-muted/60 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                      <Activity className="w-8 h-8 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-foreground mb-3">No Transactions Yet</h3>
+                    <p className="text-base text-muted-foreground">
+                      Your transaction history will appear here once you start processing payments.
+                    </p>
                   </div>
-                  <h3 className="text-xl font-semibold text-foreground mb-3">No Transactions Yet</h3>
-                  <p className="text-base text-muted-foreground">
-                    Your transaction history will appear here once you start using our API services.
-                  </p>
-                </div>
+                ) : (
+                  <div className="space-y-3">
+                    {transactions.map((tx) => (
+                      <div key={tx.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/30 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4 flex-1">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                            tx.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30' :
+                            tx.status === 'pending' || tx.status === 'processing' ? 'bg-yellow-100 dark:bg-yellow-900/30' :
+                            'bg-red-100 dark:bg-red-900/30'
+                          }`}>
+                            <Activity className={`w-5 h-5 ${
+                              tx.status === 'completed' ? 'text-green-600 dark:text-green-400' :
+                              tx.status === 'pending' || tx.status === 'processing' ? 'text-yellow-600 dark:text-yellow-400' :
+                              'text-red-600 dark:text-red-400'
+                            }`} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-semibold text-foreground">{tx.token}</p>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${
+                                tx.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                tx.status === 'pending' || tx.status === 'processing' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' :
+                                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                              }`}>
+                                {tx.status}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(tx.createdAt).toLocaleDateString()} at {new Date(tx.createdAt).toLocaleTimeString()}
+                            </p>
+                            {tx.txHash && (
+                              <p className="text-xs text-muted-foreground mt-1 font-mono">
+                                {tx.txHash.substring(0, 16)}...
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-bold text-foreground">${tx.amountUsd.toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {userRole === 'provider' || userRole === 'psp' 
+                              ? `+$${tx.commission?.toFixed(2) || '0.00'} commission`
+                              : `+$${tx.markup?.toFixed(2) || '0.00'} markup`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -55,21 +55,55 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     const role = (user as any).user_metadata?.role || (user as any).scope?.toLowerCase() || 'sender';
     setUserRole(role);
     
+    // Fetch fresh user data to bypass cache
+    refreshUserData();
+    
     // Fetch fresh KYB status and profile data from API
     fetchKYBStatus();
     fetchProfileData();
   }, [user]);
+
+  const refreshUserData = async () => {
+    try {
+      console.log('🔄 Refreshing user data from database...');
+      const response = await fetch('/api/user/refresh', {
+        headers: {
+          'x-user-id': user.id
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const freshUser = data.user;
+        
+        console.log('✅ Fresh user data:', freshUser);
+        
+        // Update localStorage with fresh data
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userObj = JSON.parse(storedUser);
+          userObj.kyb_verification_status = freshUser.kyb_verification_status;
+          userObj.is_email_verified = freshUser.is_email_verified;
+          userObj.updated_at = freshUser.updated_at;
+          localStorage.setItem('user', JSON.stringify(userObj));
+          console.log('✅ localStorage updated with fresh KYB status:', freshUser.kyb_verification_status);
+        }
+        
+        // Update KYB status state
+        setKybStatus(freshUser.kyb_verification_status || 'not_started');
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
 
   const fetchProfileData = async () => {
     try {
       const isProvider = userRole === 'provider' || userRole === 'psp' || (user as any).scope?.toLowerCase() === 'provider' || (user as any).scope?.toLowerCase() === 'psp';
       const apiEndpoint = isProvider ? '/api/provider-profile' : '/api/sender-profile';
 
-      const response = await fetch(apiEndpoint, {
+      const response = await fetch(`${apiEndpoint}?userId=${user.id}`, {
         method: 'GET',
-        headers: {
-          'x-user-id': user.id,
-        },
       });
 
       if (response.ok) {
@@ -150,9 +184,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': user.id, // Send user ID for custom auth
         },
         body: JSON.stringify({
+          userId: user.id, // Send user ID in request body
           tradingName: formData.company_name,
           contactEmail: user.email,
           contactPhone: formData.phone,
@@ -260,8 +294,14 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     }
   };
 
-  const getBusinessTypeDisplay = (type?: string) => {
-    return type === "sender" ? "Sender" : "Provider";
+  const getBusinessTypeDisplay = () => {
+    // Use userRole state which is set from user metadata
+    if (userRole === 'sender' || userRole === 'bank') return "Sender / Bank";
+    if (userRole === 'provider' || userRole === 'psp') return "Provider / PSP";
+    // Fallback to profile business_type if available
+    if (profile?.business_type === "sender") return "Sender / Bank";
+    if (profile?.business_type === "provider") return "Provider / PSP";
+    return "Not Set";
   };
 
   return (
@@ -296,7 +336,7 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Business Type</Label>
               <div className="px-4 py-3 bg-muted/40 rounded-xl border border-border/30">
                 <p className="text-base font-medium">
-                  {getBusinessTypeDisplay(profile?.business_type)}
+                  {getBusinessTypeDisplay()}
                 </p>
               </div>
             </div>

@@ -21,7 +21,7 @@ const navigation = [
   },
   {
     name: "Docs",
-    href: "https://apinedapay.vercel.app/",
+    href: "/protected/docs",
     icon: FileText,
   },
   {
