@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Building2, CheckCircle, AlertCircle, Plus, Minus } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
+import { WalletSetupWizard } from "@/components/onboarding/wallet-setup-wizard";
 
 interface ProviderConfigurationsProps {
   userId?: string;
@@ -16,9 +17,11 @@ interface ProviderConfigurationsProps {
 
 interface Network {
   id: string;
-  chain_id: string;
+  chain_id: string | null;
   identifier: string;
-  name: string;
+  network_type: string;  // 'evm' or 'hedera'
+  priority: number;
+  hedera_network_id?: string | null;
 }
 
 interface ProviderConfig {
@@ -53,6 +56,7 @@ export function ProviderLiquidityConfigurations({ userId }: ProviderConfiguratio
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showWizard, setShowWizard] = useState(false);
 
   const currentUser = getCurrentUser();
   const effectiveUserId = userId || currentUser?.id;
@@ -198,6 +202,25 @@ export function ProviderLiquidityConfigurations({ userId }: ProviderConfiguratio
           </div>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Check if wallet addresses are configured
+  const hasWalletsConfigured = networks.length > 0 && networks.every(
+    network => config.walletAddresses[network.identifier]?.trim().length > 0
+  );
+
+  // Show wallet setup wizard if wallets are not configured OR user clicks "Setup Guide"
+  if ((!hasWalletsConfigured || showWizard) && effectiveUserId) {
+    return (
+      <WalletSetupWizard 
+        userId={effectiveUserId}
+        onComplete={() => {
+          // Refresh configurations after wallet setup
+          setShowWizard(false);
+          fetchConfigurations();
+        }}
+      />
     );
   }
 
@@ -454,21 +477,61 @@ export function ProviderLiquidityConfigurations({ userId }: ProviderConfiguratio
       {/* Wallet Addresses */}
       <Card>
         <CardHeader>
-          <CardTitle>USDC wallet addresses</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Enter the addresses to receive USDC settlements across networks
-          </p>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>USDC Wallet Addresses</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Enter your wallet addresses to receive USDC settlements on each network
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowWizard(true)}
+              className="flex-shrink-0"
+            >
+              Setup Guide
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {networks.length > 0 ? (
             networks.map((network) => (
-              <div key={network.id} className="space-y-2">
-                <Label htmlFor={network.identifier} className="capitalize">
-                  {network.identifier} wallet address
-                </Label>
-                <div className="text-xs text-muted-foreground mb-1">
-                  Chain ID: {network.chain_id}
+              <div key={network.id} className="space-y-3 p-4 border rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor={network.identifier} className="text-base font-semibold capitalize">
+                      {network.identifier.replace('-', ' ')}
+                    </Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                        Priority {network.priority}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-muted">
+                        {network.network_type === 'hedera' ? 'Hedera' : 'EVM'}
+                      </span>
+                    </div>
+                  </div>
+                  {network.priority === 1 && (
+                    <span className="text-xs font-medium text-green-600">PRIMARY</span>
+                  )}
                 </div>
+                
+                <div className="text-xs text-muted-foreground space-y-1">
+                  {network.network_type === 'hedera' ? (
+                    <>
+                      <p>• Network: {network.hedera_network_id || 'testnet'}</p>
+                      <p>• Format: Hedera Account ID (e.g., 0.0.7099609)</p>
+                      <p className="text-orange-600 font-medium">⚠️ Use your Hedera account ID, NOT an EVM address</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>• Chain ID: {network.chain_id}</p>
+                      <p>• Format: EVM Address (e.g., 0x742d35...)</p>
+                    </>
+                  )}
+                </div>
+                
                 <Input
                   id={network.identifier}
                   value={config.walletAddresses[network.identifier] || ""}
@@ -479,7 +542,12 @@ export function ProviderLiquidityConfigurations({ userId }: ProviderConfiguratio
                       [network.identifier]: e.target.value
                     }
                   }))}
-                  placeholder="0x000000000000000000000000000000000000000"
+                  placeholder={
+                    network.network_type === 'hedera' 
+                      ? "0.0.7099609" 
+                      : "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+                  }
+                  className="font-mono text-sm"
                 />
               </div>
             ))

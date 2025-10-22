@@ -6,19 +6,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
+  ArrowUpRight, 
+  Wallet, 
+  Coins, 
+  Clock, 
   Activity,
-  ArrowRight,
-  Clock,
+  TrendingUp,
   Zap,
-  ArrowUpRight,
-  Wallet,
-  BarChart3,
-  Network,
-  TrendingDown,
   CircleCheck,
-  Coins,
+  BarChart3,
+  TrendingDown,
+  Network,
+  ArrowRight,
   Plus
 } from "lucide-react";
+import { useAuth } from "@/lib/data";
+import { OrderQueue } from "@/components/provider/order-queue";
 
 interface DashboardProps {
   user: User;
@@ -269,6 +272,14 @@ export function Dashboard({ user, userRole }: DashboardProps) {
               >
                 Overview
               </TabsTrigger>
+              {(userRole === 'provider' || userRole === 'psp') && (
+                <TabsTrigger 
+                  value="orders"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition-all px-6"
+                >
+                  Order Queue
+                </TabsTrigger>
+              )}
               <TabsTrigger 
                 value="transactions"
                 className="data-[state=active]:bg-background data-[state=active]:shadow-sm hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition-all px-6"
@@ -644,6 +655,10 @@ export function Dashboard({ user, userRole }: DashboardProps) {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="orders" className="space-y-6">
+            <OrderQueue userId={user.id} />
           </TabsContent>
 
           <TabsContent value="docs" className="space-y-6">
