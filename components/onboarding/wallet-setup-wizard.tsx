@@ -84,7 +84,7 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">Welcome to NedaPay! 🎉</h1>
         <p className="text-muted-foreground">
-          Let's set up your settlement wallets in just 3 steps
+          Let&apos;s set up your settlement wallets in just 3 steps
         </p>
       </div>
 
@@ -137,7 +137,7 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Don't have a Hedera account?</strong> It takes 5 minutes to create one.
+                  <strong>Don&apos;t have a Hedera account?</strong> It takes 5 minutes to create one.
                 </AlertDescription>
               </Alert>
 
@@ -174,7 +174,7 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
                     Create Account
                   </h4>
                   <ul className="space-y-2 text-sm text-muted-foreground ml-8">
-                    <li>• Click "Create Account" → Select "Testnet"</li>
+                    <li>• Click &quot;Create Account&quot; → Select &quot;Testnet&quot;</li>
                     <li>• Enter your email and create password</li>
                     <li>• Verify your email</li>
                     <li>• Get free HBAR from the faucet (for fees)</li>
@@ -187,7 +187,7 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
                     Copy Your Account ID
                   </h4>
                   <p className="text-sm text-muted-foreground ml-8">
-                    You'll see something like: <code className="bg-muted px-1">0.0.7099612</code>
+                    You&apos;ll see something like: <code className="bg-muted px-1">0.0.7099612</code>
                   </p>
                 </div>
 
@@ -225,7 +225,7 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Don't have MetaMask?</strong> It takes 3 minutes to install.
+                  <strong>Don&apos;t have MetaMask?</strong> It takes 3 minutes to install.
                 </AlertDescription>
               </Alert>
 
@@ -262,7 +262,7 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
                     Create Wallet
                   </h4>
                   <ul className="space-y-2 text-sm text-muted-foreground ml-8">
-                    <li>• Click "Create a new wallet"</li>
+                    <li>• Click &quot;Create a new wallet&quot;</li>
                     <li>• Set a password</li>
                     <li>• SAVE your 12-word recovery phrase</li>
                     <li>• Complete setup</li>
@@ -313,7 +313,7 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
               <Alert className="bg-blue-50 border-blue-200">
                 <Info className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-900">
-                  Please double-check your addresses before saving. Incorrect addresses mean you won't receive payments!
+                  Please double-check your addresses before saving. Incorrect addresses mean you won&apos;t receive payments!
                 </AlertDescription>
               </Alert>
 
@@ -409,6 +409,7 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
           <a
             href="/PSP_ONBOARDING_GUIDE.md"
             target="_blank"
+            rel="noopener noreferrer"
             className="text-primary hover:underline"
           >
             View Full Guide

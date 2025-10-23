@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,15 +23,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2,
-  ArrowRight,
+  Calendar,
+  Clock,
   DollarSign,
+  FileText,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+  XCircle,
+  Loader2,
   Network,
-  Hash,
-  AlertCircle
+  ArrowRight
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -64,14 +66,7 @@ export function OrderQueue({ userId }: OrderQueueProps) {
   const [networkUsed, setNetworkUsed] = useState("");
   const [newStatus, setNewStatus] = useState<"processing" | "completed" | "failed">("completed");
 
-  useEffect(() => {
-    fetchOrders();
-    // Poll for new orders every 30 seconds
-    const interval = setInterval(fetchOrders, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -108,7 +103,14 @@ export function OrderQueue({ userId }: OrderQueueProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    fetchOrders();
+    // Poll for new orders every 30 seconds
+    const interval = setInterval(fetchOrders, 30000);
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
 
   const openFulfillmentDialog = (order: PaymentOrder) => {
     setSelectedOrder(order);

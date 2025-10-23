@@ -5,18 +5,23 @@ import { User } from "@supabase/supabase-js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  ArrowUpRight, 
-  Wallet, 
-  Coins, 
-  Clock, 
-  Activity,
-  TrendingUp,
+import {
+  ArrowUpRight,
+  ArrowDownRight,
+  DollarSign,
+  Globe2,
   Zap,
-  CircleCheck,
+  Copy,
+  Check,
+  PartyPopper,
+  Wallet,
+  Coins,
+  Activity,
+  Clock,
   BarChart3,
   TrendingDown,
   Network,
+  CircleCheck,
   ArrowRight,
   Plus
 } from "lucide-react";
