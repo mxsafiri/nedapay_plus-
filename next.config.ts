@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     esmExternals: true,
   },
   // Optimize server components (moved from experimental)
-  serverExternalPackages: ['@supabase/supabase-js'],
+  serverExternalPackages: ['@supabase/supabase-js', '@prisma/client', 'prisma', 'bcryptjs'],
   // Optimize images
   images: {
     formats: ['image/avif', 'image/webp'],
