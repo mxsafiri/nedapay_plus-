@@ -48,7 +48,7 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     license: null,
   });
 
-  const supabase = createClient();
+  const _supabase = createClient();
 
   // Detect user role and fetch fresh KYB status on mount
   useEffect(() => {
@@ -61,6 +61,7 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     // Fetch fresh KYB status and profile data from API
     fetchKYBStatus();
     fetchProfileData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const refreshUserData = async () => {
@@ -268,7 +269,7 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
         throw new Error(error.error || 'Failed to upload documents');
       }
 
-      const result = await response.json();
+      const _result = await response.json();
       toast.success("Documents uploaded successfully! Verification in progress.");
       
       // Refresh KYB status

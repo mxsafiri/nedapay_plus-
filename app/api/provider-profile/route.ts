@@ -49,7 +49,9 @@ export async function POST(request: NextRequest) {
     const {
       pspName,
       tradingName,
-      contactEmail,
+    } = body;
+    const _contactEmail = body.contactEmail;
+    const {
       contactPhone,
       address,
       mobileNumber,

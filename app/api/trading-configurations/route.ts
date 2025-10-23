@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       networks: token.networks ? {
         ...token.networks,
         id: token.networks.id.toString(),
-        chain_id: token.networks.chain_id.toString()
+        chain_id: token.networks.chain_id ? token.networks.chain_id.toString() : null
       } : null
     }));
 

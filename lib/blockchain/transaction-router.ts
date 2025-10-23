@@ -193,8 +193,8 @@ export class TransactionRouter {
    */
   private async executeOnEVM(
     network: NetworkInfo,
-    token: TokenInfo,
-    params: TransactionParams
+    _token: TokenInfo,
+    _params: TransactionParams
   ): Promise<TransactionResult> {
     // TODO: Implement EVM transaction logic
     // This would use ethers.js or viem to execute ERC-20 transfers

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { ApiKey } from "@/lib/types/database";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { ApiKeyManager, ProfileSettings } from "./shared";
 
 // Sender-specific components
-import { SenderTradingConfigurations, SenderServerConfigurations, RevenueSettings } from "./sender";
+import { SenderServerConfigurations, RevenueSettings } from "./sender";
 
 // Provider-specific components
 import { ProviderLiquidityConfigurations } from "./provider";

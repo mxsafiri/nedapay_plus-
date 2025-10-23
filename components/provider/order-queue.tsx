@@ -23,11 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { 
-  Calendar,
   Clock,
   DollarSign,
-  FileText,
-  TrendingUp,
   AlertCircle,
   CheckCircle2,
   XCircle,

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     };
 
     // Update sender profile
-    const senderProfile = await prisma.sender_profiles.update({
+    const _senderProfile = await prisma.sender_profiles.update({
       where: { user_sender_profile: user.id },
       data: {
         white_label_config: whiteLabelConfig,
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET - Get white-label configuration
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

@@ -183,7 +183,7 @@ export class NetworkSelector {
    */
   async selectNetworksForTransaction(
     tokenSymbol: string,
-    amount: number
+    _amount: number
   ): Promise<Array<{ network: NetworkInfo; token: TokenInfo }>> {
     const networks = await this.getAvailableNetworks();
     const result: Array<{ network: NetworkInfo; token: TokenInfo }> = [];

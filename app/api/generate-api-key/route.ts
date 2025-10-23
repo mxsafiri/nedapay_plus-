@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
 }
 
 // GET - Check if user has API key (doesn't return the key)
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
 }
 
 // DELETE - Revoke API key
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sendOrderWebhookToSender } from '@/lib/webhooks/delivery';
 import { prisma } from '@/lib/prisma';
 import crypto from 'crypto';
-import { sendOrderWebhookToSender, sendOrderWebhookToPSP } from '@/lib/webhooks/delivery';
 
 /**
  * Hash API key for matching against stored hash
@@ -59,25 +59,25 @@ async function authenticateRequest(request: NextRequest) {
     }
 
     // Get user from profile
-    let userId: string | null = null;
-    let scope: string | null = null;
-    let profile: any = null;
+    let _userId: string | null = null;
+    let _scope: string | null = null;
+    let _profile: any = null;
 
     if (key.sender_profiles) {
-      userId = key.sender_profiles.user_sender_profile;
-      scope = 'sender';
-      profile = key.sender_profiles;
+      _userId = key.sender_profiles.user_sender_profile;
+      _scope = 'sender';
+      _profile = key.sender_profiles;
     } else if (key.provider_profiles) {
-      userId = key.provider_profiles.user_provider_profile;
-      scope = 'provider';
-      profile = key.provider_profiles;
+      _userId = key.provider_profiles.user_provider_profile;
+      _scope = 'provider';
+      _profile = key.provider_profiles;
     } else {
       return { authenticated: false, error: 'API key not linked to any profile' };
     }
 
     // Get user details
     const user = await prisma.users.findUnique({
-      where: { id: userId },
+      where: { id: _userId },
       select: {
         id: true,
         email: true,
@@ -102,7 +102,7 @@ async function authenticateRequest(request: NextRequest) {
 }
 
 // Get available PSP for order fulfillment
-async function assignPSP(toCurrency: string, amount: number) {
+async function assignPSP(_toCurrency: string, _amount: number) {
   try {
     // Find active PSPs that support the destination currency
     const providers = await prisma.provider_profiles.findMany({

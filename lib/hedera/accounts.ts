@@ -7,8 +7,6 @@ import {
   AccountCreateTransaction,
   TokenAssociateTransaction,
   PrivateKey,
-  PublicKey,
-  AccountId,
   TokenId,
   Hbar,
 } from '@hashgraph/sdk';
@@ -123,7 +121,7 @@ export class HederaAccountService {
       const txResponse = await signedTx.execute(client);
       
       // Get receipt
-      const receipt = await txResponse.getReceipt(client);
+      const _receipt = await txResponse.getReceipt(client);
 
       console.log(`✅ Token associated successfully!`);
       console.log(`   Transaction ID: ${txResponse.transactionId.toString()}`);

@@ -39,6 +39,7 @@ export function RevenueSettings({ userId }: RevenueSettingsProps) {
     if (effectiveUserId) {
       fetchRevenueData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveUserId]);
 
   useEffect(() => {

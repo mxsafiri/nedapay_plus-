@@ -24,6 +24,7 @@ export default function Settings() {
       }
     }
     setLoading(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkProviderProfile = async () => {

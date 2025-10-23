@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Wallet, FileText, DollarSign, Key, Check, ArrowRight, Upload, Globe } from 'lucide-react';
+import { Wallet, DollarSign, Key, Check, ArrowRight, Upload, Globe } from 'lucide-react';
 import { calculatePspMonthlyCommissions, formatCurrency } from '@/lib/revenue-calculator';
 
 const COUNTRIES = [
@@ -481,7 +481,7 @@ export default function PSPOnboardingPage() {
                     <div>
                       <p className="font-semibold">API Key Generation</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        We'll generate a secure API key that allows you to:
+                        We&apos;ll generate a secure API key that allows you to:
                       </p>
                       <ul className="text-sm text-muted-foreground mt-2 space-y-1">
                         <li>• Receive payment order notifications</li>

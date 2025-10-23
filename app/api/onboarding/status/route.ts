@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getOnboardingStatus } from '@/lib/onboarding/status';
 
 // GET - Check if user has completed onboarding
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();

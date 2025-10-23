@@ -430,7 +430,7 @@ export function UserManagement() {
           <DialogHeader>
             <DialogTitle>Reject KYB Verification</DialogTitle>
             <DialogDescription>
-              Please provide a reason for rejecting {selectedUser?.first_name} {selectedUser?.last_name}'s KYB verification
+              Please provide a reason for rejecting {selectedUser?.first_name} {selectedUser?.last_name}&apos;s KYB verification
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

@@ -91,10 +91,10 @@ async function authenticateRequest(request: NextRequest) {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
+  const { orderId } = await params;
   try {
-    const { orderId } = params;
     console.log('📥 Getting payment order:', orderId);
 
     // Authenticate
@@ -206,10 +206,10 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
+  const { orderId } = await params;
   try {
-    const { orderId } = params;
     console.log('📥 Updating payment order:', orderId);
 
     // Authenticate

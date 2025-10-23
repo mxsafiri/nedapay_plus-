@@ -404,7 +404,7 @@ export default function BankOnboardingPage() {
                     <div>
                       <p className="font-medium text-sm">API Key Generation</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        We'll generate a secure API key for you to integrate NedaPay into your systems.
+                        We&apos;ll generate a secure API key for you to integrate NedaPay into your systems.
                         You can regenerate it anytime from your dashboard.
                       </p>
                     </div>

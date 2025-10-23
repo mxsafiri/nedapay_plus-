@@ -7,10 +7,8 @@ import {
   TransferTransaction,
   TokenId,
   AccountId,
-  PrivateKey,
   Hbar,
   TransactionReceipt,
-  TransactionRecord,
   Status,
 } from '@hashgraph/sdk';
 import { HederaClient } from './client';
@@ -216,13 +214,13 @@ export class HederaTransactionService {
   /**
    * Get transaction status
    */
-  async getTransactionStatus(transactionId: string): Promise<{
+  async getTransactionStatus(_transactionId: string): Promise<{
     status: string;
     timestamp?: Date;
     fee?: string;
   }> {
     try {
-      const client = this.client.getClient();
+      const _client = this.client.getClient();
       
       // Query transaction receipt
       // Note: This requires the transaction ID format

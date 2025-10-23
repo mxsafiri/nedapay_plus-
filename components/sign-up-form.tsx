@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Eye, EyeOff, Check } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export function SignUpForm({
   className,

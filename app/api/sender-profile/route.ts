@@ -57,9 +57,9 @@ export async function POST(request: NextRequest) {
       // Onboarding fields
       bankName,
       country,
-      contactName,
-      contactEmail,
-      contactPhone
+      _contactName,
+      _contactEmail,
+      _contactPhone
     } = body;
 
     if (!userId) {

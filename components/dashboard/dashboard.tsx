@@ -7,13 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ArrowUpRight,
-  ArrowDownRight,
-  DollarSign,
-  Globe2,
   Zap,
-  Copy,
-  Check,
-  PartyPopper,
   Wallet,
   Coins,
   Activity,
@@ -25,7 +19,6 @@ import {
   ArrowRight,
   Plus
 } from "lucide-react";
-import { useAuth } from "@/lib/data";
 import { OrderQueue } from "@/components/provider/order-queue";
 
 interface DashboardProps {
@@ -41,7 +34,7 @@ export function Dashboard({ user, userRole }: DashboardProps) {
   const [savingsData, setSavingsData] = useState<any>(null);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
   const [currentGifIndex, setCurrentGifIndex] = useState(0);
 
   // GIF rotation - str2 plays first, then loops through all
@@ -57,7 +50,7 @@ export function Dashboard({ user, userRole }: DashboardProps) {
     }, 5000); // Change GIF every 5 seconds
 
     return () => clearInterval(interval);
-  }, []);
+  }, [gifs.length]);
 
   // Fetch multi-chain data and user stats
   useEffect(() => {
@@ -129,6 +122,7 @@ export function Dashboard({ user, userRole }: DashboardProps) {
     if (activeTab === 'transactions' && transactions.length === 0) {
       fetchTransactions();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const fetchTransactions = async () => {
