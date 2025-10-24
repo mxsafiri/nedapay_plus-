@@ -185,6 +185,7 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.id}`,
         },
         body: JSON.stringify({
           userId: user.id, // Send user ID in request body

@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserFromRequest } from '@/lib/auth/server';
 import crypto from 'crypto';
 
 // GET - Get or create sender profile for a user
 export async function GET(request: NextRequest) {
   try {
+    // Try to get user from authentication
+    const authUser = await getUserFromRequest(request);
+    
+    // Fallback to query param for backwards compatibility
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = authUser?.id || searchParams.get('userId');
 
     if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if sender profile already exists
@@ -46,6 +51,9 @@ export async function GET(request: NextRequest) {
 // POST - Create or update sender profile (supports onboarding)
 export async function POST(request: NextRequest) {
   try {
+    // Get authenticated user
+    const authUser = await getUserFromRequest(request);
+    
     const body = await request.json();
     const { 
       userId, 
@@ -62,13 +70,16 @@ export async function POST(request: NextRequest) {
       _contactPhone
     } = body;
 
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    // Use authenticated user ID or fallback to body userId
+    const finalUserId = authUser?.id || userId;
+
+    if (!finalUserId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Check if profile exists
     const existingProfile = await prisma.sender_profiles.findUnique({
-      where: { user_sender_profile: userId }
+      where: { user_sender_profile: finalUserId }
     });
 
     let senderProfile;
@@ -76,7 +87,7 @@ export async function POST(request: NextRequest) {
     if (existingProfile) {
       // Update existing profile
       senderProfile = await prisma.sender_profiles.update({
-        where: { user_sender_profile: userId },
+        where: { user_sender_profile: finalUserId },
         data: {
           webhook_url: webhookUrl,
           domain_whitelist: domainWhitelist || [],
@@ -91,7 +102,7 @@ export async function POST(request: NextRequest) {
       senderProfile = await prisma.sender_profiles.create({
         data: {
           id: crypto.randomUUID(),
-          user_sender_profile: userId,
+          user_sender_profile: finalUserId,
           webhook_url: webhookUrl || null,
           domain_whitelist: domainWhitelist || [],
           is_active: isActive ?? true,
@@ -104,7 +115,7 @@ export async function POST(request: NextRequest) {
       // If onboarding data provided, update user info
       if (bankName || country) {
         await prisma.users.update({
-          where: { id: userId },
+          where: { id: finalUserId },
           data: {
             updated_at: new Date()
           }
