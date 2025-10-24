@@ -9,6 +9,8 @@ import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 // Shared components (used by both senders and providers)
 import { ApiKeyManager, ProfileSettings } from "./shared";
+import { ChangePasswordDialog } from "./shared/change-password-dialog";
+import { LoginHistoryDialog } from "./shared/login-history-dialog";
 
 // Sender-specific components
 import { SenderServerConfigurations, RevenueSettings } from "./sender";
@@ -33,6 +35,8 @@ interface SettingsPageProps {
 
 export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState("profile");
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   
   // Get user role from profile, metadata, or scope field (single role now)
   const userRole = user.user_metadata?.role || profile?.role || (user as any).scope?.toLowerCase() || 'sender';
@@ -224,7 +228,12 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
                       Change your account password
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" className="ml-4 rounded-lg">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-4 rounded-lg"
+                    onClick={() => setIsPasswordDialogOpen(true)}
+                  >
                     Change Password
                   </Button>
                 </div>
@@ -236,7 +245,12 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
                       View recent login activity
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" className="ml-4 rounded-lg">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="ml-4 rounded-lg"
+                    onClick={() => setIsHistoryDialogOpen(true)}
+                  >
                     View History
                   </Button>
                 </div>
@@ -246,6 +260,19 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
         </TabsContent>
         </div>
       </Tabs>
+
+      {/* Security Dialogs */}
+      <ChangePasswordDialog
+        open={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
+        userId={user.id}
+      />
+      
+      <LoginHistoryDialog
+        open={isHistoryDialogOpen}
+        onOpenChange={setIsHistoryDialogOpen}
+        userId={user.id}
+      />
     </div>
   );
 }
