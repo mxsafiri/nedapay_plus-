@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     const { isTest = false, regenerate = false, keyName } = body;
 
     // Check if user has a profile (bank or PSP)
+    console.log('Looking up user:', user.id);
     const userData = await prisma.users.findUnique({
       where: { id: user.id },
       include: {
@@ -45,15 +46,34 @@ export async function POST(request: NextRequest) {
     });
 
     if (!userData) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      console.error('User not found in database:', user.id);
+      return NextResponse.json({ 
+        error: 'User not found',
+        details: 'Your user account does not exist in the database'
+      }, { status: 404 });
     }
+
+    console.log('User found:', {
+      id: userData.id,
+      email: userData.email,
+      hasSenderProfile: !!userData.sender_profiles,
+      hasProviderProfile: !!userData.provider_profiles
+    });
 
     const hasSenderProfile = !!userData.sender_profiles;
     const hasProviderProfile = !!userData.provider_profiles;
 
     if (!hasSenderProfile && !hasProviderProfile) {
+      console.warn('User has no profiles:', user.id);
       return NextResponse.json(
-        { error: 'Please complete your profile setup first' },
+        { 
+          error: 'Please complete your profile setup first',
+          details: 'You need to complete either sender (bank) or provider (PSP) onboarding before creating API keys',
+          actions: {
+            senderOnboarding: '/onboarding/sender',
+            providerOnboarding: '/onboarding/psp'
+          }
+        },
         { status: 400 }
       );
     }
@@ -85,6 +105,7 @@ export async function POST(request: NextRequest) {
 
     // Delete existing key if regenerating
     if (existingKey && regenerate) {
+      console.log('Deleting existing key:', existingKey.id);
       await prisma.api_keys.delete({
         where: { id: existingKey.id }
       });
@@ -93,6 +114,14 @@ export async function POST(request: NextRequest) {
     // Generate new API key
     const apiKey = generateApiKey(isTest);
     const hashedKey = hashApiKey(apiKey);
+
+    console.log('Creating API key:', {
+      isTest,
+      profileId,
+      hasSenderProfile,
+      hasProviderProfile,
+      keyPrefix: apiKey.substring(0, 8)
+    });
 
     // Create API key record
     const apiKeyRecord = await prisma.api_keys.create({
@@ -104,6 +133,8 @@ export async function POST(request: NextRequest) {
         ...(hasProviderProfile && { provider_profile_api_key: profileId })
       }
     });
+
+    console.log('API key created successfully:', apiKeyRecord.id);
 
     // Mark profile as having API key
     if (hasSenderProfile) {
@@ -129,10 +160,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error generating API key:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
       { 
         error: 'Failed to generate API key',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
+        stack: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.stack : null) : null
       },
       { status: 500 }
     );
