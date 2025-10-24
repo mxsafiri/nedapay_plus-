@@ -99,6 +99,7 @@ export async function POST(request: NextRequest) {
       data: {
         id: crypto.randomUUID(),
         secret: hashedKey,
+        is_test: isTest,
         ...(hasSenderProfile && { sender_profile_api_key: profileId }),
         ...(hasProviderProfile && { provider_profile_api_key: profileId })
       }

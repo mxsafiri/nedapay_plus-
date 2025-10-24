@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendOrderWebhookToSender } from '@/lib/webhooks/delivery';
 import { prisma } from '@/lib/prisma';
+import { MockBlockchainService, shouldUseMockService } from '@/lib/blockchain/mock-service';
+import { getTestModeFromKey, isValidApiKeyFormat } from '@/lib/auth/test-mode';
 import crypto from 'crypto';
 
 /**
@@ -41,14 +43,16 @@ async function authenticateRequest(request: NextRequest) {
           select: {
             id: true,
             markup_percentage: true,
-            user_sender_profile: true
+            user_sender_profile: true,
+            test_balance: true
           }
         },
         provider_profiles: {
           select: {
             id: true,
             commission_rate: true,
-            user_provider_profile: true
+            user_provider_profile: true,
+            test_balance: true
           }
         }
       }
@@ -93,7 +97,9 @@ async function authenticateRequest(request: NextRequest) {
       authenticated: true, 
       user: user,
       senderProfile: key.sender_profiles,
-      providerProfile: key.provider_profiles
+      providerProfile: key.provider_profiles,
+      isTestMode: key.is_test,
+      apiKey: apiKey
     };
   } catch (error) {
     console.error('Error authenticating API key:', error);
@@ -145,7 +151,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { user, senderProfile } = auth;
+    const { user, senderProfile, isTestMode, apiKey } = auth;
+
+    console.log(`🔧 Test Mode: ${isTestMode ? 'ON' : 'OFF'}`);
 
     if (!user) {
       return NextResponse.json(
@@ -238,8 +246,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Generate mock transaction if in test mode
+    let mockTx = null;
+    if (isTestMode || shouldUseMockService(isTestMode)) {
+      mockTx = await MockBlockchainService.mockSendTransaction({
+        from: 'test_bank_address',
+        to: recipientDetails.accountNumber || recipientDetails.address || 'test_recipient',
+        amount: toAmount,
+        network: 'hedera-testnet'
+      });
+      console.log('🧪 Mock transaction generated:', mockTx.txHash);
+    }
+
     // Create payment order
-    const orderId = `order_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+    const orderId = isTestMode ? `test_order_${Date.now()}_${crypto.randomBytes(8).toString('hex')}` : `order_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
     
     const order = await prisma.payment_orders.create({
       data: {
@@ -251,14 +271,21 @@ export async function POST(request: NextRequest) {
         sender_fee: 0,
         rate: exchangeRate,
         receive_address_text: recipientDetails.accountNumber || recipientDetails.address || 'pending',
-        status: 'pending',
+        status: isTestMode ? 'confirmed' : 'pending', // Auto-confirm in test mode
         sender_profile_payment_orders: senderProfile.id,
         token_payment_orders: defaultToken.id,
-        network_fee: 0,
+        network_fee: mockTx ? mockTx.fee : 0,
         fee_percent: markupPercentage,
-        percent_settled: 0,
+        percent_settled: isTestMode ? 100 : 0, // Auto-settle in test mode
         protocol_fee: platformFee,
         reference: reference || null,
+        
+        // Test mode tracking
+        is_test_mode: isTestMode,
+        tx_hash: mockTx ? mockTx.txHash : null,
+        tx_id: mockTx ? mockTx.txId : null,
+        network_used: mockTx ? mockTx.network : null,
+        block_number: mockTx ? mockTx.blockNumber : 0,
         
         // Revenue tracking
         bank_markup: bankMarkup,
@@ -311,9 +338,17 @@ export async function POST(request: NextRequest) {
       toCurrency: toCurrency,
       exchangeRate: exchangeRate,
       bankMarkup: bankMarkup,
-      estimatedCompletion: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 mins
+      estimatedCompletion: isTestMode ? new Date().toISOString() : new Date(Date.now() + 30 * 60 * 1000).toISOString(),
       createdAt: order.created_at.toISOString(),
-      reference: reference || null
+      reference: reference || null,
+      testMode: isTestMode,
+      ...(isTestMode && mockTx && {
+        testData: {
+          txHash: mockTx.txHash,
+          network: mockTx.network,
+          message: 'This is a test transaction. No real funds were moved.'
+        }
+      })
     });
 
   } catch (error) {
