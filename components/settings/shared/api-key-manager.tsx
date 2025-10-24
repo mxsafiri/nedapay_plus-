@@ -47,7 +47,9 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
   const [apiKeys, setApiKeys] = useState(initialApiKeys);
   const [isCreating, setIsCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
+  const [isTestMode, setIsTestMode] = useState(true); // Default to test mode
   const [newApiKey, setNewApiKey] = useState<{ key: string; type: string } | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   const createApiKey = async () => {
     if (!newKeyName.trim()) {
@@ -57,6 +59,8 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
 
     setIsCreating(true);
     try {
+      console.log('Creating API key:', { keyName: newKeyName, isTest: isTestMode });
+      
       const response = await fetch('/api/generate-api-key', {
         method: 'POST',
         headers: {
@@ -65,12 +69,14 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
         },
         body: JSON.stringify({
           keyName: newKeyName.trim(),
-          isTest: false,
+          isTest: isTestMode,
+          regenerate: true, // Allow regeneration if key exists
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
+        console.error('API key creation failed:', error);
         throw new Error(error.error || 'Failed to create API key');
       }
 
@@ -94,7 +100,9 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
 
       setNewApiKey({ key: data.apiKey, type: data.type });
       setNewKeyName("");
+      setCreateDialogOpen(false); // Close create dialog
       toast.success("API key created successfully! Make sure to copy it now.");
+      console.log('API key created:', { orderId: data.keyId, type: data.type });
     } catch (error) {
       console.error('Error creating API key:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to create API key';
@@ -159,23 +167,18 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
                 </p>
               </div>
             </div>
-            <Dialog>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button disabled={apiKeys.length >= 10} className="h-11 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-md hover:shadow-lg transition-all">
+                <Button className="h-11 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-md hover:shadow-lg transition-all">
                   <Plus className="mr-2 h-4 w-4" />
                   Create API Key
-                  {apiKeys.length >= 8 && (
-                    <span className="ml-2 text-xs">
-                      ({apiKeys.length}/10)
-                    </span>
-                  )}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create New API Key</DialogTitle>
                   <DialogDescription>
-                    Create a new API key to access the NedaPay platform programmatically. You can create multiple keys for different environments (development, staging, production) or applications.
+                    Create a new API key to access the NedaPay platform programmatically. Use test keys for development and live keys for production.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -183,10 +186,30 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
                     <Label htmlFor="keyName">Key Name</Label>
                     <Input
                       id="keyName"
-                      placeholder="e.g., Production API Key"
+                      placeholder="e.g., Development Test Key"
                       value={newKeyName}
                       onChange={(e) => setNewKeyName(e.target.value)}
                     />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Choose a descriptive name to identify this key
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2 p-4 bg-muted/50 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="testMode"
+                      checked={isTestMode}
+                      onChange={(e) => setIsTestMode(e.target.checked)}
+                      className="h-4 w-4"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="testMode" className="text-sm font-medium cursor-pointer">
+                        Test Mode (Sandbox)
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {isTestMode ? 'Creates np_test_* key for safe testing' : 'Creates np_live_* key for production'}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <DialogFooter>
