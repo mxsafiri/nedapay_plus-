@@ -36,7 +36,6 @@ import {
   Calendar,
   Activity
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 interface ApiKeyManagerProps {
@@ -48,30 +47,7 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
   const [apiKeys, setApiKeys] = useState(initialApiKeys);
   const [isCreating, setIsCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
-  const [newApiKey, setNewApiKey] = useState<{ key: string; secret: string } | null>(null);
-  const supabase = createClient();
-
-  const generateApiKey = () => {
-    const prefix = 'neda_';
-    const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    return prefix + randomPart;
-  };
-
-  const generateApiSecret = () => {
-    return Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  };
-
-  const hashSecret = async (secret: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(secret);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  };
+  const [newApiKey, setNewApiKey] = useState<{ key: string; type: string } | null>(null);
 
   const createApiKey = async () => {
     if (!newKeyName.trim()) {
@@ -79,50 +55,50 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
       return;
     }
 
-    // Check if user has reached the limit
-    if (apiKeys.length >= 10) {
-      toast.error("You have reached the maximum limit of 10 API keys");
-      return;
-    }
-
-    // Check for duplicate names
-    if (apiKeys.some(key => (key as any).key_name?.toLowerCase() === newKeyName.trim().toLowerCase())) {
-      toast.error("An API key with this name already exists");
-      return;
-    }
-
     setIsCreating(true);
     try {
-      const apiKey = generateApiKey();
-      const apiSecret = generateApiSecret();
-      const secretHash = await hashSecret(apiSecret);
+      const response = await fetch('/api/generate-api-key', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.id}`,
+        },
+        body: JSON.stringify({
+          keyName: newKeyName.trim(),
+          isTest: false,
+        }),
+      });
 
-      const { data, error } = await supabase
-        .from('api_keys')
-        .insert({
-          user_id: user.id,
-          key_name: newKeyName.trim(),
-          api_key: apiKey,
-          api_secret_hash: secretHash,
-          permissions: {
-            transactions: { read: true, write: true },
-            profile: { read: true, write: false },
-            api_keys: { read: true, write: false, delete: false },
-            webhooks: { read: true, write: true }
-          }
-        })
-        .select()
-        .single();
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create API key');
+      }
 
-      if (error) throw error;
+      const data = await response.json();
+      
+      // Refresh API keys list
+      const refreshResponse = await fetch('/api/generate-api-key', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+        },
+      });
 
-      setApiKeys([data, ...apiKeys]);
-      setNewApiKey({ key: apiKey, secret: apiSecret });
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        if (refreshData.hasApiKey) {
+          // Add the new key to the list (we won't show the actual key value again)
+          setApiKeys([...apiKeys, refreshData.keyInfo]);
+        }
+      }
+
+      setNewApiKey({ key: data.apiKey, type: data.type });
       setNewKeyName("");
-      toast.success("API key created successfully");
+      toast.success("API key created successfully! Make sure to copy it now.");
     } catch (error) {
       console.error('Error creating API key:', error);
-      toast.error("Failed to create API key");
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create API key';
+      toast.error(errorMessage);
     } finally {
       setIsCreating(false);
     }
@@ -130,18 +106,24 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
 
   const deleteApiKey = async (keyId: string) => {
     try {
-      const { error } = await supabase
-        .from('api_keys')
-        .delete()
-        .eq('id', keyId);
+      const response = await fetch('/api/generate-api-key', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user.id}`,
+        },
+      });
 
-      if (error) throw error;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete API key');
+      }
 
       setApiKeys(apiKeys.filter(key => key.id !== keyId));
       toast.success("API key deleted successfully");
     } catch (error) {
       console.error('Error deleting API key:', error);
-      toast.error("Failed to delete API key");
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete API key';
+      toast.error(errorMessage);
     }
   };
 
@@ -346,22 +328,10 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
                   </Button>
                 </div>
               </div>
-              <div>
-                <Label>API Secret</Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Input
-                    value={newApiKey.secret}
-                    readOnly
-                    className="font-mono text-sm"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyToClipboard(newApiKey.secret, "API Secret")}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                <p className="text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                  Important: This API key will only be shown once. Make sure to copy and store it securely.
+                </p>
               </div>
             </div>
             <DialogFooter>

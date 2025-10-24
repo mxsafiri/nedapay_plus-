@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createClient } from '@/lib/supabase/server';
+import { getUserFromRequest } from '@/lib/auth/server';
 import crypto from 'crypto';
 
 /**
@@ -26,15 +26,14 @@ function hashApiKey(apiKey: string): string {
 // POST - Generate API key for user
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUserFromRequest(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json().catch(() => ({}));
-    const { isTest = false, regenerate = false } = body;
+    const { isTest = false, regenerate = false, keyName } = body;
 
     // Check if user has a profile (bank or PSP)
     const userData = await prisma.users.findUnique({
@@ -140,10 +139,9 @@ export async function POST(request: NextRequest) {
 }
 
 // GET - Check if user has API key (doesn't return the key)
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUserFromRequest(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -184,10 +182,9 @@ export async function GET(_request: NextRequest) {
 }
 
 // DELETE - Revoke API key
-export async function DELETE(_request: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getUserFromRequest(request);
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
