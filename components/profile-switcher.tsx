@@ -16,31 +16,12 @@ import { getCurrentUser } from "@/lib/auth";
 
 export function ProfileSwitcher() {
   const router = useRouter();
-  const [currentProfile, setCurrentProfile] = useState<"sender" | "provider">("sender");
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     const userData = getCurrentUser();
     setUser(userData);
-    
-    // Get current profile from localStorage or user metadata
-    const savedProfile = localStorage.getItem("activeProfile") as "sender" | "provider";
-    if (savedProfile) {
-      setCurrentProfile(savedProfile);
-    } else if (userData?.scope) {
-      setCurrentProfile(userData.scope as "sender" | "provider");
-    }
   }, []);
-
-  const handleSwitchProfile = () => {
-    const newProfile = currentProfile === "sender" ? "provider" : "sender";
-    setCurrentProfile(newProfile);
-    localStorage.setItem("activeProfile", newProfile);
-    
-    // Redirect to dashboard to refresh the view
-    router.push("/protected");
-    router.refresh();
-  };
 
   const handleSettings = () => {
     router.push("/protected/settings");
@@ -75,7 +56,6 @@ export function ProfileSwitcher() {
   if (!user) return null;
 
   const displayName = `${user.first_name || ""} ${user.last_name || ""}`.trim() || "User";
-  const switchToLabel = currentProfile === "sender" ? "Provider" : "Sender";
 
   return (
     <DropdownMenu>
@@ -109,10 +89,6 @@ export function ProfileSwitcher() {
         <DropdownMenuItem onClick={handleSettings}>
           <Settings className="mr-2 h-4 w-4" />
           <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={handleSwitchProfile}>
-          <User className="mr-2 h-4 w-4" />
-          <span>Switch to {switchToLabel}</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>
