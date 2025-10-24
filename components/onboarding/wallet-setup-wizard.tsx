@@ -81,9 +81,11 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       {/* Header */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">Welcome to NedaPay! 🎉</h1>
-        <p className="text-muted-foreground">
+      <div className="text-center mb-8 space-y-3">
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          Welcome to NedaPay
+        </h1>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Let&apos;s set up your settlement wallets in just 3 steps
         </p>
       </div>
@@ -119,10 +121,10 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
       {/* Step Content */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle>
-            {currentStep === 1 && '🌐 Set Up Hedera Wallet (Primary)'}
-            {currentStep === 2 && '⛓️ Set Up Base Wallet (Backup)'}
-            {currentStep === 3 && '✅ Review & Confirm'}
+          <CardTitle className="text-2xl">
+            {currentStep === 1 && 'Set Up Hedera Wallet (Primary)'}
+            {currentStep === 2 && 'Set Up Base Wallet (Backup)'}
+            {currentStep === 3 && 'Review & Confirm'}
           </CardTitle>
           <CardDescription>
             {currentStep === 1 && 'Receives 95% of your payments with ultra-low fees ($0.0001/tx)'}
@@ -322,8 +324,8 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <h4 className="font-semibold flex items-center gap-2">
-                        🌐 Hedera Testnet
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Primary</span>
+                        Hedera Testnet
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Primary</span>
                       </h4>
                       <p className="text-sm text-muted-foreground">Receives ~95% of settlements</p>
                     </div>
@@ -338,8 +340,8 @@ export function WalletSetupWizard({ userId, onComplete }: WalletSetupWizardProps
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <h4 className="font-semibold flex items-center gap-2">
-                        ⛓️ Base Sepolia
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Backup</span>
+                        Base Sepolia
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">Backup</span>
                       </h4>
                       <p className="text-sm text-muted-foreground">Receives ~5% of settlements</p>
                     </div>
