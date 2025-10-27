@@ -3,6 +3,18 @@ import { prisma } from '@/lib/prisma';
 import { getUserFromRequest } from '@/lib/auth/server';
 import crypto from 'crypto';
 
+// Helper to convert BigInt to Number for JSON serialization
+function serializeProfile(profile: any) {
+  return {
+    ...profile,
+    commission_rate: profile.commission_rate ? Number(profile.commission_rate) : 0,
+    monthly_commissions: profile.monthly_commissions ? Number(profile.monthly_commissions) : 0,
+    total_commissions: profile.total_commissions ? Number(profile.total_commissions) : 0,
+    fulfillment_count: profile.fulfillment_count ? Number(profile.fulfillment_count) : 0,
+    test_balance: profile.test_balance ? Number(profile.test_balance) : 0,
+  };
+}
+
 // GET - Get provider profile for a user
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +32,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Provider profile not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ providerProfile });
+    return NextResponse.json({ providerProfile: serializeProfile(providerProfile) });
   } catch (error) {
     console.error('Error fetching provider profile:', error);
     return NextResponse.json(
@@ -129,7 +141,7 @@ export async function POST(request: NextRequest) {
     console.log('✅ Returning success response');
     return NextResponse.json({
       success: true,
-      providerProfile,
+      providerProfile: serializeProfile(providerProfile),
       message: existingProfile ? 'Profile updated' : 'Profile created'
     });
   } catch (error) {
@@ -175,7 +187,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      providerProfile,
+      providerProfile: serializeProfile(providerProfile),
       message: 'Profile updated successfully'
     });
   } catch (error) {
