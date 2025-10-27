@@ -189,17 +189,47 @@ export async function POST(request: NextRequest) {
     });
 
     // Create API key record
-    const apiKeyRecord = await prisma.api_keys.create({
-      data: {
-        id: crypto.randomUUID(),
-        secret: hashedKey,
-        is_test: isTest,
-        ...(hasSenderProfile && { sender_profile_api_key: profileId }),
-        ...(hasProviderProfile && { provider_profile_api_key: profileId })
+    // Use upsert as fallback if deletion didn't work
+    let apiKeyRecord;
+    try {
+      apiKeyRecord = await prisma.api_keys.create({
+        data: {
+          id: crypto.randomUUID(),
+          secret: hashedKey,
+          is_test: isTest,
+          ...(hasSenderProfile && { sender_profile_api_key: profileId }),
+          ...(hasProviderProfile && { provider_profile_api_key: profileId })
+        }
+      });
+      console.log('✅ API key created successfully:', apiKeyRecord.id);
+    } catch (createError: any) {
+      // If create fails due to unique constraint, try updating the existing key
+      if (createError?.code === 'P2002') {
+        console.warn('⚠️ Unique constraint violation - attempting upsert');
+        
+        // Find and update the existing key
+        const existingToUpdate = await prisma.api_keys.findFirst({
+          where: hasSenderProfile
+            ? { sender_profile_api_key: profileId }
+            : { provider_profile_api_key: profileId }
+        });
+        
+        if (existingToUpdate) {
+          apiKeyRecord = await prisma.api_keys.update({
+            where: { id: existingToUpdate.id },
+            data: {
+              secret: hashedKey,
+              is_test: isTest
+            }
+          });
+          console.log('✅ API key updated (upsert):', apiKeyRecord.id);
+        } else {
+          throw createError;
+        }
+      } else {
+        throw createError;
       }
-    });
-
-    console.log('API key created successfully:', apiKeyRecord.id);
+    }
 
     // Mark profile as having API key
     if (hasSenderProfile) {
