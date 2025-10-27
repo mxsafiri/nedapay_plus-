@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendOrderWebhookToSender } from '@/lib/webhooks/delivery';
 import { prisma } from '@/lib/prisma';
 import { MockBlockchainService, shouldUseMockService } from '@/lib/blockchain/mock-service';
-import { getTestModeFromKey, isValidApiKeyFormat } from '@/lib/auth/test-mode';
 import crypto from 'crypto';
 
 /**
@@ -151,7 +150,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { user, senderProfile, isTestMode, apiKey } = auth;
+    const { user, senderProfile, isTestMode } = auth;
 
     console.log(`🔧 Test Mode: ${isTestMode ? 'ON' : 'OFF'}`);
 

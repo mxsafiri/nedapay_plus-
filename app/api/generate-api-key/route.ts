@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const { isTest = false, regenerate = false, keyName } = body;
+    const { isTest = false, regenerate = false } = body;
 
     // Check if user has a profile (bank or PSP)
     console.log('Looking up user:', user.id);

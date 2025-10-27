@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -55,17 +55,11 @@ export function LoginHistoryDialog({
   onOpenChange,
   userId,
 }: LoginHistoryDialogProps) {
-  const [history, setHistory] = useState<LoginRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginHistory, setLoginHistory] = useState<LoginRecord[]>([]);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (open) {
-      fetchLoginHistory();
-    }
-  }, [open]);
-
-  const fetchLoginHistory = async () => {
+  const fetchLoginHistory = useCallback(async () => {
     setIsLoading(true);
     setError("");
 
@@ -81,14 +75,20 @@ export function LoginHistoryDialog({
       }
 
       const data = await response.json();
-      setHistory(data.history || []);
+      setLoginHistory(data.history || []);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An error occurred";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (open) {
+      fetchLoginHistory();
+    }
+  }, [open, fetchLoginHistory]);
 
   const getDeviceIcon = (userAgent: string) => {
     const isMobile = /mobile|android|iphone|ipad/i.test(userAgent);
@@ -133,13 +133,13 @@ export function LoginHistoryDialog({
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-        ) : history.length === 0 ? (
+        ) : loginHistory.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <p>No login history available</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {history.map((record) => (
+            {loginHistory.map((record) => (
               <div
                 key={record.id}
                 className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"

@@ -93,7 +93,7 @@ export class MockBlockchainService {
   /**
    * Mock transaction status check (always returns confirmed)
    */
-  static async mockGetTransactionStatus(txHash: string): Promise<'pending' | 'confirmed' | 'failed'> {
+  static async mockGetTransactionStatus(_txHash: string): Promise<'pending' | 'confirmed' | 'failed'> {
     // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 100));
     return 'confirmed';
