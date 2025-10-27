@@ -10,15 +10,22 @@ export default function Settings() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [checkingProfile, setCheckingProfile] = useState(true);
+  const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
     if (currentUser) {
       setUser(currentUser);
       
+      // Fetch API keys
+      fetchApiKeys(currentUser.id);
+      
       // Check if provider has completed onboarding
       if (currentUser.scope?.toLowerCase() === 'provider' || currentUser.scope?.toLowerCase() === 'psp') {
-        checkProviderProfile();
+        checkProviderProfile(currentUser.id);
+      } else if (currentUser.scope?.toLowerCase() === 'sender' || currentUser.scope?.toLowerCase() === 'bank') {
+        checkSenderProfile(currentUser.id);
       } else {
         setCheckingProfile(false);
       }
@@ -27,17 +34,65 @@ export default function Settings() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const checkProviderProfile = async () => {
+  const fetchApiKeys = async (userId: string) => {
     try {
-      const response = await fetch('/api/provider-profile');
-      if (response.status === 404) {
+      const response = await fetch('/api/generate-api-key', {
+        headers: {
+          'Authorization': `Bearer ${userId}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.hasApiKey && data.keyInfo) {
+          setApiKeys([data.keyInfo]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+    }
+  };
+
+  const checkProviderProfile = async (userId: string) => {
+    try {
+      const response = await fetch('/api/provider-profile', {
+        headers: {
+          'Authorization': `Bearer ${userId}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+      } else if (response.status === 404) {
         // No profile found - redirect to onboarding
         router.push('/onboarding/psp');
         return;
       }
       setCheckingProfile(false);
     } catch (error) {
-      console.error('Error checking profile:', error);
+      console.error('Error checking provider profile:', error);
+      setCheckingProfile(false);
+    }
+  };
+
+  const checkSenderProfile = async (userId: string) => {
+    try {
+      const response = await fetch('/api/sender-profile', {
+        headers: {
+          'Authorization': `Bearer ${userId}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProfile(data);
+      } else if (response.status === 404) {
+        // No profile found - redirect to onboarding
+        router.push('/onboarding/sender');
+        return;
+      }
+      setCheckingProfile(false);
+    } catch (error) {
+      console.error('Error checking sender profile:', error);
       setCheckingProfile(false);
     }
   };
@@ -71,8 +126,8 @@ export default function Settings() {
   return (
     <SettingsPage 
       user={settingsUser as any} 
-      profile={null} 
-      apiKeys={[]} 
+      profile={profile} 
+      apiKeys={apiKeys} 
     />
   );
 }
