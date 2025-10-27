@@ -111,65 +111,57 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Delete existing key if regenerating
+    // If key exists and regenerating, UPDATE it instead of deleting
     if (existingKey && regenerate) {
-      console.log('Attempting to delete existing key:', {
+      console.log('Existing key found - will UPDATE instead of creating new:', {
         keyId: existingKey.id,
         profileId,
         hasSenderProfile,
         hasProviderProfile
       });
       
+      // Generate new API key
+      const apiKey = generateApiKey(isTest);
+      const hashedKey = hashApiKey(apiKey);
+      
       try {
-        // Delete using deleteMany with profile ID to handle edge cases
-        const deleteResult = hasSenderProfile
-          ? await prisma.api_keys.deleteMany({
-              where: { sender_profile_api_key: profileId }
-            })
-          : await prisma.api_keys.deleteMany({
-              where: { provider_profile_api_key: profileId }
-            });
-        
-        console.log('✅ Delete query executed, deleted count:', deleteResult.count);
-        
-        if (deleteResult.count === 0) {
-          console.warn('⚠️ No keys were deleted - key might not exist');
-        }
-        
-        // Wait for database to commit
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Verify deletion by checking the profile relationship
-        const checkStillExists = await prisma.api_keys.findFirst({
-          where: hasSenderProfile
-            ? { sender_profile_api_key: profileId }
-            : { provider_profile_api_key: profileId }
+        // UPDATE existing key with new secret
+        const updatedKey = await prisma.api_keys.update({
+          where: { id: existingKey.id },
+          data: {
+            secret: hashedKey,
+            is_test: isTest
+          }
         });
         
-        if (checkStillExists) {
-          console.error('❌ Key still exists after deletion!', {
-            keyId: checkStillExists.id,
-            profileId,
-            deleteCount: deleteResult.count
+        console.log('✅ API key updated successfully:', updatedKey.id);
+        
+        // Mark profile as updated
+        if (hasSenderProfile) {
+          await prisma.sender_profiles.update({
+            where: { id: profileId },
+            data: { updated_at: new Date() }
           });
-          return NextResponse.json(
-            { 
-              error: 'Failed to delete existing key',
-              details: 'Key still exists in database after deletion attempt. Please try again or contact support.',
-              keyId: checkStillExists.id,
-              deleteCount: deleteResult.count
-            },
-            { status: 500 }
-          );
+        } else {
+          await prisma.provider_profiles.update({
+            where: { id: profileId },
+            data: { updated_at: new Date() }
+          });
         }
         
-        console.log('✅ Deletion verified - no keys exist for profile');
-      } catch (deleteError) {
-        console.error('Error deleting existing key:', deleteError);
+        return NextResponse.json({
+          success: true,
+          apiKey,
+          keyId: updatedKey.id,
+          type: isTest ? 'test' : 'live',
+          message: 'API key regenerated successfully.'
+        });
+      } catch (updateError) {
+        console.error('Error updating existing key:', updateError);
         return NextResponse.json(
           { 
-            error: 'Failed to delete existing key',
-            details: deleteError instanceof Error ? deleteError.message : 'Unknown error'
+            error: 'Failed to update existing key',
+            details: updateError instanceof Error ? updateError.message : 'Unknown error'
           },
           { status: 500 }
         );
@@ -188,62 +180,18 @@ export async function POST(request: NextRequest) {
       keyPrefix: apiKey.substring(0, 8)
     });
 
-    // Create API key record
-    // Use upsert as fallback if deletion didn't work
-    let apiKeyRecord;
-    try {
-      apiKeyRecord = await prisma.api_keys.create({
-        data: {
-          id: crypto.randomUUID(),
-          secret: hashedKey,
-          is_test: isTest,
-          ...(hasSenderProfile && { sender_profile_api_key: profileId }),
-          ...(hasProviderProfile && { provider_profile_api_key: profileId })
-        }
-      });
-      console.log('✅ API key created successfully:', apiKeyRecord.id);
-    } catch (createError: any) {
-      console.error('Create error caught:', {
-        code: createError?.code,
-        message: createError?.message,
-        meta: createError?.meta
-      });
-      
-      // If create fails due to unique constraint, try updating the existing key
-      // P2002 = Unique constraint violation
-      // P2003 = Foreign key constraint violation
-      if (createError?.code === 'P2002' || createError?.code === 'P2003' || 
-          createError?.message?.includes('constraint') || 
-          createError?.message?.includes('api_keys_provider_profiles_api_key')) {
-        
-        console.warn('⚠️ Constraint violation detected - attempting upsert fallback');
-        
-        // Find and update the existing key
-        const existingToUpdate = await prisma.api_keys.findFirst({
-          where: hasSenderProfile
-            ? { sender_profile_api_key: profileId }
-            : { provider_profile_api_key: profileId }
-        });
-        
-        if (existingToUpdate) {
-          console.log('Found existing key to update:', existingToUpdate.id);
-          apiKeyRecord = await prisma.api_keys.update({
-            where: { id: existingToUpdate.id },
-            data: {
-              secret: hashedKey,
-              is_test: isTest
-            }
-          });
-          console.log('✅ API key updated successfully (upsert):', apiKeyRecord.id);
-        } else {
-          console.error('❌ No existing key found for upsert, re-throwing error');
-          throw createError;
-        }
-      } else {
-        console.error('❌ Non-constraint error, re-throwing');
-        throw createError;
+    // Create new API key record (only reached if no existing key)
+    const apiKeyRecord = await prisma.api_keys.create({
+      data: {
+        id: crypto.randomUUID(),
+        secret: hashedKey,
+        is_test: isTest,
+        ...(hasSenderProfile && { sender_profile_api_key: profileId }),
+        ...(hasProviderProfile && { provider_profile_api_key: profileId })
       }
-    }
+    });
+    
+    console.log('✅ API key created successfully:', apiKeyRecord.id);
 
     // Mark profile as having API key
     if (hasSenderProfile) {
