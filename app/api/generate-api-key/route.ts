@@ -82,6 +82,14 @@ export async function POST(request: NextRequest) {
     const profileId = hasSenderProfile 
       ? userData.sender_profiles!.id 
       : userData.provider_profiles!.id;
+    
+    console.log('Profile ID from database:', {
+      profileId,
+      hasSenderProfile,
+      hasProviderProfile,
+      senderProfileId: userData.sender_profiles?.id,
+      providerProfileId: userData.provider_profiles?.id
+    });
 
     const existingKey = await prisma.api_keys.findFirst({
       where: {
