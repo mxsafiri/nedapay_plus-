@@ -366,6 +366,8 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/v1/payment-orders
  * List payment orders for the authenticated user
+ * - Senders (Banks): View orders they created
+ * - Providers (PSPs): View orders assigned to them for fulfillment
  */
 export async function GET(request: NextRequest) {
   try {
@@ -380,7 +382,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { user, senderProfile } = auth;
+    const { user, senderProfile, providerProfile, isTestMode } = auth;
 
     if (!user) {
       return NextResponse.json(
@@ -389,56 +391,169 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log(`📊 Listing orders for ${user.scope} (Test Mode: ${isTestMode})`);
+
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = parseInt(searchParams.get('offset') || '0');
     const status = searchParams.get('status');
 
     let orders;
+    let totalCount = 0;
 
     if (user.scope.toLowerCase() === 'sender' || user.scope.toLowerCase() === 'bank') {
-      // Bank view: their submitted orders
+      // Bank view: Orders they submitted
       const whereClause: any = {
-        sender_profile_payment_orders: senderProfile?.id || ''
+        sender_profile_payment_orders: senderProfile?.id || '',
+        is_test_mode: isTestMode // Only show orders matching API key mode
       };
 
       if (status) {
         whereClause.status = status;
       }
 
+      // Get total count for pagination
+      totalCount = await prisma.payment_orders.count({ where: whereClause });
+
       orders = await prisma.payment_orders.findMany({
         where: whereClause,
         orderBy: { created_at: 'desc' },
+        skip: offset,
         take: limit,
         include: {
           tokens: {
             select: { symbol: true }
+          },
+          payment_order_recipients: {
+            select: {
+              account_name: true,
+              account_identifier: true,
+              institution: true,
+              memo: true
+            }
           }
         }
       });
+
+      console.log(`✅ Found ${orders.length} orders for sender ${senderProfile?.id}`);
+
+      return NextResponse.json({
+        success: true,
+        orders: orders.map(order => ({
+          orderId: order.id,
+          status: order.status,
+          fromAmount: order.amount,
+          toAmount: order.amount_paid,
+          exchangeRate: order.rate,
+          bankMarkup: order.bank_markup,
+          platformFee: order.platform_fee,
+          reference: order.reference,
+          recipient: order.payment_order_recipients,
+          token: order.tokens?.symbol,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+          txHash: order.tx_hash,
+          network: order.network_used,
+          testMode: order.is_test_mode
+        })),
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasMore: offset + orders.length < totalCount
+        }
+      });
+
+    } else if (user.scope.toLowerCase() === 'provider' || user.scope.toLowerCase() === 'psp') {
+      // Provider view: Orders assigned to them for fulfillment
+      const whereClause: any = {
+        assigned_psp_id: providerProfile?.id || '',
+        is_test_mode: isTestMode // Only show orders matching API key mode
+      };
+
+      if (status) {
+        whereClause.status = status;
+      }
+
+      // Get total count for pagination
+      totalCount = await prisma.payment_orders.count({ where: whereClause });
+
+      orders = await prisma.payment_orders.findMany({
+        where: whereClause,
+        orderBy: { created_at: 'desc' },
+        skip: offset,
+        take: limit,
+        include: {
+          tokens: {
+            select: { symbol: true }
+          },
+          payment_order_recipients: {
+            select: {
+              account_name: true,
+              account_identifier: true,
+              institution: true,
+              memo: true
+            }
+          },
+          sender_profiles: {
+            select: {
+              id: true,
+              users: {
+                select: {
+                  email: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      console.log(`✅ Found ${orders.length} orders assigned to provider ${providerProfile?.id}`);
+
+      return NextResponse.json({
+        success: true,
+        orders: orders.map(order => ({
+          orderId: order.id,
+          status: order.status,
+          fromAmount: order.amount,
+          toAmount: order.amount_paid,
+          amountInUsd: order.amount_in_usd,
+          exchangeRate: order.rate,
+          pspCommission: order.psp_commission, // How much PSP earns
+          platformFee: order.platform_fee,
+          reference: order.reference,
+          recipient: order.payment_order_recipients,
+          senderEmail: order.sender_profiles?.users?.email,
+          token: order.tokens?.symbol,
+          createdAt: order.created_at,
+          updatedAt: order.updated_at,
+          txHash: order.tx_hash,
+          network: order.network_used,
+          testMode: order.is_test_mode,
+          // PSP-specific fields
+          percentSettled: order.percent_settled,
+          needsFulfillment: order.percent_settled < 100
+        })),
+        pagination: {
+          total: totalCount,
+          limit,
+          offset,
+          hasMore: offset + orders.length < totalCount
+        },
+        summary: {
+          totalEarnings: orders.reduce((sum, o) => sum + o.psp_commission, 0),
+          pendingOrders: orders.filter(o => o.percent_settled < 100).length,
+          completedOrders: orders.filter(o => o.percent_settled === 100).length
+        }
+      });
+
     } else {
       // Other roles can't list orders via this API
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Unauthorized: Only senders and providers can list orders' },
         { status: 403 }
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      orders: orders.map(order => ({
-        orderId: order.id,
-        status: order.status,
-        fromAmount: order.amount,
-        toAmount: order.amount_paid,
-        exchangeRate: order.rate,
-        bankMarkup: order.bank_markup,
-        reference: order.reference,
-        createdAt: order.created_at,
-        updatedAt: order.updated_at,
-        txHash: order.tx_hash
-      })),
-      count: orders.length
-    });
 
   } catch (error) {
     console.error('❌ Error listing payment orders:', error);
