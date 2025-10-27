@@ -203,9 +203,20 @@ export async function POST(request: NextRequest) {
       });
       console.log('✅ API key created successfully:', apiKeyRecord.id);
     } catch (createError: any) {
+      console.error('Create error caught:', {
+        code: createError?.code,
+        message: createError?.message,
+        meta: createError?.meta
+      });
+      
       // If create fails due to unique constraint, try updating the existing key
-      if (createError?.code === 'P2002') {
-        console.warn('⚠️ Unique constraint violation - attempting upsert');
+      // P2002 = Unique constraint violation
+      // P2003 = Foreign key constraint violation
+      if (createError?.code === 'P2002' || createError?.code === 'P2003' || 
+          createError?.message?.includes('constraint') || 
+          createError?.message?.includes('api_keys_provider_profiles_api_key')) {
+        
+        console.warn('⚠️ Constraint violation detected - attempting upsert fallback');
         
         // Find and update the existing key
         const existingToUpdate = await prisma.api_keys.findFirst({
@@ -215,6 +226,7 @@ export async function POST(request: NextRequest) {
         });
         
         if (existingToUpdate) {
+          console.log('Found existing key to update:', existingToUpdate.id);
           apiKeyRecord = await prisma.api_keys.update({
             where: { id: existingToUpdate.id },
             data: {
@@ -222,11 +234,13 @@ export async function POST(request: NextRequest) {
               is_test: isTest
             }
           });
-          console.log('✅ API key updated (upsert):', apiKeyRecord.id);
+          console.log('✅ API key updated successfully (upsert):', apiKeyRecord.id);
         } else {
+          console.error('❌ No existing key found for upsert, re-throwing error');
           throw createError;
         }
       } else {
+        console.error('❌ Non-constraint error, re-throwing');
         throw createError;
       }
     }
