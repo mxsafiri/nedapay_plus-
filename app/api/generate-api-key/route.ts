@@ -84,17 +84,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for existing API key
-    const profileId = hasSenderProfile 
-      ? userData.sender_profiles!.id 
-      : userData.provider_profiles!.id;
+    // Get the correct profile IDs
+    const senderProfileId = userData.sender_profiles?.id;
+    const providerProfileId = userData.provider_profiles?.id;
+    
+    // Determine which profile to use for this API key based on which exists
+    // If user has both, prefer provider (PSP) since that's what they're trying to create
+    const profileId = hasProviderProfile ? providerProfileId! : senderProfileId!;
     
     console.log('Profile ID from database:', {
       profileId,
       hasSenderProfile,
       hasProviderProfile,
-      senderProfileId: userData.sender_profiles?.id,
-      providerProfileId: userData.provider_profiles?.id
+      senderProfileId,
+      providerProfileId,
+      usingProfile: hasProviderProfile ? 'provider' : 'sender'
     });
 
     const existingKey = await prisma.api_keys.findFirst({
@@ -151,14 +155,15 @@ export async function POST(request: NextRequest) {
         console.log('✅ API key updated successfully:', updatedKey.id);
         
         // Mark profile as updated
-        if (hasSenderProfile) {
+        if (hasSenderProfile && senderProfileId) {
           await prisma.sender_profiles.update({
-            where: { id: profileId },
+            where: { id: senderProfileId },
             data: { updated_at: new Date() }
           });
-        } else {
+        }
+        if (hasProviderProfile && providerProfileId) {
           await prisma.provider_profiles.update({
-            where: { id: profileId },
+            where: { id: providerProfileId },
             data: { updated_at: new Date() }
           });
         }
@@ -195,12 +200,13 @@ export async function POST(request: NextRequest) {
     });
 
     // Create new API key record (only reached if no existing key)
+    // Use the CORRECT profile ID for each field!
     const insertData = {
       id: crypto.randomUUID(),
       secret: hashedKey,
       is_test: isTest,
-      ...(hasSenderProfile && { sender_profile_api_key: profileId }),
-      ...(hasProviderProfile && { provider_profile_api_key: profileId })
+      ...(hasSenderProfile && senderProfileId && { sender_profile_api_key: senderProfileId }),
+      ...(hasProviderProfile && providerProfileId && { provider_profile_api_key: providerProfileId })
     };
     
     console.log('🔧 Inserting API key with data:', insertData);
@@ -212,14 +218,15 @@ export async function POST(request: NextRequest) {
     console.log('✅ API key created successfully:', apiKeyRecord.id);
 
     // Mark profile as having API key
-    if (hasSenderProfile) {
+    if (hasSenderProfile && senderProfileId) {
       await prisma.sender_profiles.update({
-        where: { id: profileId },
+        where: { id: senderProfileId },
         data: { updated_at: new Date() }
       });
-    } else {
+    }
+    if (hasProviderProfile && providerProfileId) {
       await prisma.provider_profiles.update({
-        where: { id: profileId },
+        where: { id: providerProfileId },
         data: { updated_at: new Date() }
       });
     }
