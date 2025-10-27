@@ -113,49 +113,51 @@ export async function POST(request: NextRequest) {
 
     // Delete existing key if regenerating
     if (existingKey && regenerate) {
-      console.log('Attempting to delete existing key:', existingKey.id);
+      console.log('Attempting to delete existing key:', {
+        keyId: existingKey.id,
+        profileId,
+        hasSenderProfile,
+        hasProviderProfile
+      });
+      
       try {
-        // First, verify we can find it
-        const keyToDelete = await prisma.api_keys.findUnique({
-          where: { id: existingKey.id }
-        });
+        // Delete using deleteMany with profile ID to handle edge cases
+        const deleteResult = hasSenderProfile
+          ? await prisma.api_keys.deleteMany({
+              where: { sender_profile_api_key: profileId }
+            })
+          : await prisma.api_keys.deleteMany({
+              where: { provider_profile_api_key: profileId }
+            });
         
-        if (!keyToDelete) {
-          console.warn('Key already deleted or does not exist');
-        } else {
-          console.log('Found key to delete:', {
-            id: keyToDelete.id,
-            sender_profile: keyToDelete.sender_profile_api_key,
-            provider_profile: keyToDelete.provider_profile_api_key
-          });
-          
-          // Delete the key
-          await prisma.api_keys.delete({
-            where: { id: existingKey.id }
-          });
-          console.log('✅ Delete query executed');
+        console.log('✅ Delete query executed, deleted count:', deleteResult.count);
+        
+        if (deleteResult.count === 0) {
+          console.warn('⚠️ No keys were deleted - key might not exist');
         }
         
-        // Wait a moment for database to commit
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for database to commit
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Verify deletion by checking the profile relationship
         const checkStillExists = await prisma.api_keys.findFirst({
-          where: {
-            OR: [
-              { sender_profile_api_key: profileId },
-              { provider_profile_api_key: profileId }
-            ]
-          }
+          where: hasSenderProfile
+            ? { sender_profile_api_key: profileId }
+            : { provider_profile_api_key: profileId }
         });
         
         if (checkStillExists) {
-          console.error('❌ Key still exists after deletion!', checkStillExists.id);
+          console.error('❌ Key still exists after deletion!', {
+            keyId: checkStillExists.id,
+            profileId,
+            deleteCount: deleteResult.count
+          });
           return NextResponse.json(
             { 
               error: 'Failed to delete existing key',
-              details: 'Key still exists in database after deletion attempt',
-              keyId: checkStillExists.id
+              details: 'Key still exists in database after deletion attempt. Please try again or contact support.',
+              keyId: checkStillExists.id,
+              deleteCount: deleteResult.count
             },
             { status: 500 }
           );
