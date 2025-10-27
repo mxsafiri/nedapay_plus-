@@ -92,12 +92,20 @@ export async function POST(request: NextRequest) {
       }
     });
 
+    console.log('Existing key check:', {
+      profileId,
+      hasExistingKey: !!existingKey,
+      existingKeyId: existingKey?.id,
+      regenerate
+    });
+
     // If key exists and not regenerating, return error
     if (existingKey && !regenerate) {
       return NextResponse.json(
         { 
           error: 'API key already exists. Set regenerate=true to create a new one.',
-          hasExistingKey: true
+          hasExistingKey: true,
+          existingKeyId: existingKey.id
         },
         { status: 409 }
       );
@@ -105,10 +113,35 @@ export async function POST(request: NextRequest) {
 
     // Delete existing key if regenerating
     if (existingKey && regenerate) {
-      console.log('Deleting existing key:', existingKey.id);
-      await prisma.api_keys.delete({
-        where: { id: existingKey.id }
-      });
+      console.log('Attempting to delete existing key:', existingKey.id);
+      try {
+        await prisma.api_keys.delete({
+          where: { id: existingKey.id }
+        });
+        console.log('✅ Existing key deleted successfully');
+        
+        // Verify deletion
+        const verifyDeleted = await prisma.api_keys.findUnique({
+          where: { id: existingKey.id }
+        });
+        
+        if (verifyDeleted) {
+          console.error('❌ Key still exists after deletion!');
+          return NextResponse.json(
+            { error: 'Failed to delete existing key' },
+            { status: 500 }
+          );
+        }
+      } catch (deleteError) {
+        console.error('Error deleting existing key:', deleteError);
+        return NextResponse.json(
+          { 
+            error: 'Failed to delete existing key',
+            details: deleteError instanceof Error ? deleteError.message : 'Unknown error'
+          },
+          { status: 500 }
+        );
+      }
     }
 
     // Generate new API key
@@ -181,6 +214,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    console.log('GET API keys for user:', user.id);
+
     const userData = await prisma.users.findUnique({
       where: { id: user.id },
       include: {
@@ -194,15 +229,27 @@ export async function GET(request: NextRequest) {
     });
 
     if (!userData) {
+      console.error('User not found:', user.id);
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const apiKey = userData.sender_profiles?.api_keys || userData.provider_profiles?.api_keys;
+    
+    console.log('Found API key:', {
+      hasKey: !!apiKey,
+      keyId: apiKey?.id,
+      isTest: apiKey?.is_test,
+      hasSenderProfile: !!userData.sender_profiles,
+      hasProviderProfile: !!userData.provider_profiles
+    });
 
     return NextResponse.json({
       hasApiKey: !!apiKey,
       keyInfo: apiKey ? {
         id: apiKey.id,
+        created_at: new Date().toISOString(), // Placeholder
+        is_test: apiKey.is_test,
+        key_name: apiKey.is_test ? 'Test Key' : 'Live Key', // We don't store key_name yet
         secret: '***' // Never return the actual key
       } : null
     });
