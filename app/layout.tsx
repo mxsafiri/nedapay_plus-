@@ -11,6 +11,16 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "NedaPay - Cross-Border Payment Infrastructure",
   description: "Seamless onramp and offramp payment solutions for global transactions",
+  icons: {
+    icon: [
+      {
+        url: '/logo.svg',
+        type: 'image/svg+xml',
+      },
+    ],
+    shortcut: '/logo.svg',
+    apple: '/logo.svg',
+  },
 };
 
 export default function RootLayout({
