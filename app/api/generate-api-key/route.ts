@@ -26,14 +26,20 @@ function hashApiKey(apiKey: string): string {
 // POST - Generate API key for user
 export async function POST(request: NextRequest) {
   try {
+    console.log('🚀 POST /api/generate-api-key - START');
+    
     const user = await getUserFromRequest(request);
-
     if (!user) {
+      console.log('❌ No user found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    console.log('✅ User authenticated:', user.id);
 
     const body = await request.json().catch(() => ({}));
-    const { isTest = false, regenerate = false } = body;
+    const { isTest = true, regenerate = false } = body;
+    
+    console.log('📝 Request body:', { isTest, regenerate });
 
     // Check if user has a profile (bank or PSP)
     console.log('Looking up user:', user.id);
@@ -189,14 +195,18 @@ export async function POST(request: NextRequest) {
     });
 
     // Create new API key record (only reached if no existing key)
+    const insertData = {
+      id: crypto.randomUUID(),
+      secret: hashedKey,
+      is_test: isTest,
+      ...(hasSenderProfile && { sender_profile_api_key: profileId }),
+      ...(hasProviderProfile && { provider_profile_api_key: profileId })
+    };
+    
+    console.log('🔧 Inserting API key with data:', insertData);
+    
     const apiKeyRecord = await prisma.api_keys.create({
-      data: {
-        id: crypto.randomUUID(),
-        secret: hashedKey,
-        is_test: isTest,
-        ...(hasSenderProfile && { sender_profile_api_key: profileId }),
-        ...(hasProviderProfile && { provider_profile_api_key: profileId })
-      }
+      data: insertData
     });
     
     console.log('✅ API key created successfully:', apiKeyRecord.id);
