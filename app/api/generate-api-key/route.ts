@@ -115,23 +115,53 @@ export async function POST(request: NextRequest) {
     if (existingKey && regenerate) {
       console.log('Attempting to delete existing key:', existingKey.id);
       try {
-        await prisma.api_keys.delete({
-          where: { id: existingKey.id }
-        });
-        console.log('✅ Existing key deleted successfully');
-        
-        // Verify deletion
-        const verifyDeleted = await prisma.api_keys.findUnique({
+        // First, verify we can find it
+        const keyToDelete = await prisma.api_keys.findUnique({
           where: { id: existingKey.id }
         });
         
-        if (verifyDeleted) {
-          console.error('❌ Key still exists after deletion!');
+        if (!keyToDelete) {
+          console.warn('Key already deleted or does not exist');
+        } else {
+          console.log('Found key to delete:', {
+            id: keyToDelete.id,
+            sender_profile: keyToDelete.sender_profile_api_key,
+            provider_profile: keyToDelete.provider_profile_api_key
+          });
+          
+          // Delete the key
+          await prisma.api_keys.delete({
+            where: { id: existingKey.id }
+          });
+          console.log('✅ Delete query executed');
+        }
+        
+        // Wait a moment for database to commit
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify deletion by checking the profile relationship
+        const checkStillExists = await prisma.api_keys.findFirst({
+          where: {
+            OR: [
+              { sender_profile_api_key: profileId },
+              { provider_profile_api_key: profileId }
+            ]
+          }
+        });
+        
+        if (checkStillExists) {
+          console.error('❌ Key still exists after deletion!', checkStillExists.id);
           return NextResponse.json(
-            { error: 'Failed to delete existing key' },
+            { 
+              error: 'Failed to delete existing key',
+              details: 'Key still exists in database after deletion attempt',
+              keyId: checkStillExists.id
+            },
             { status: 500 }
           );
         }
+        
+        console.log('✅ Deletion verified - no keys exist for profile');
       } catch (deleteError) {
         console.error('Error deleting existing key:', deleteError);
         return NextResponse.json(
