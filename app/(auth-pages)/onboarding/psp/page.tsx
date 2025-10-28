@@ -10,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Wallet, DollarSign, Key, Check, ArrowRight, Upload, Globe } from 'lucide-react';
 import { calculatePspMonthlyCommissions, formatCurrency } from '@/lib/revenue-calculator';
+import { FiatFulfillmentMethods } from '@/components/onboarding/fiat-fulfillment-methods';
 
 const COUNTRIES = [
   { code: 'CN', name: 'China', flag: '🇨🇳' },
@@ -38,11 +39,14 @@ export default function PSPOnboardingPage() {
   const [businessLicense, setBusinessLicense] = useState<File | null>(null);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
 
-  // Step 3: Treasury & Rates
+  // Step 3: Fiat Fulfillment Methods (NEW!)
+  // Note: fiatMethods are managed by the FiatFulfillmentMethods component
+
+  // Step 4: Treasury & Rates
   const [commissionRate, setCommissionRate] = useState(0.003); // 0.3% default
   const [treasuryConfig, setTreasuryConfig] = useState('');
 
-  const totalSteps = 4;
+  const totalSteps = 5; // Updated from 4 to 5
   const progress = (currentStep / totalSteps) * 100;
 
   // Revenue projection
@@ -102,7 +106,7 @@ export default function PSPOnboardingPage() {
 
       if (!response.ok) throw new Error('Failed to upload documents');
 
-      setCurrentStep(3);
+      setCurrentStep(3); // Move to fiat methods
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to upload documents. Please try again.');
@@ -111,7 +115,31 @@ export default function PSPOnboardingPage() {
     }
   };
 
-  const handleStep3Submit = async (e: React.FormEvent) => {
+  // NEW: Step 3 - Fiat Fulfillment Methods
+  const handleStep3Submit = async (methods: any) => {
+    setLoading(true);
+
+    try {
+      const response = await fetch('/api/provider-profile/fiat-methods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fiatMethods: methods }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save fiat methods');
+
+      // Fiat methods saved successfully
+      setCurrentStep(4); // Move to treasury setup
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to save fiat methods. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 4 - Treasury & Rates (previously Step 3)
+  const handleStep4Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -127,7 +155,7 @@ export default function PSPOnboardingPage() {
 
       if (!response.ok) throw new Error('Failed to save configuration');
 
-      setCurrentStep(4);
+      setCurrentStep(5); // Move to final step
     } catch (error) {
       console.error('Error:', error);
       alert('Failed to save treasury configuration. Please try again.');
@@ -136,7 +164,8 @@ export default function PSPOnboardingPage() {
     }
   };
 
-  const handleStep4Submit = async (e: React.FormEvent) => {
+  // Step 5 - Final/API Key (previously Step 4)
+  const handleStep5Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -385,7 +414,17 @@ export default function PSPOnboardingPage() {
           </Card>
         )}
 
+        {/* NEW: Step 3 - Fiat Fulfillment Methods */}
         {currentStep === 3 && (
+          <FiatFulfillmentMethods
+            onSubmit={handleStep3Submit}
+            onBack={() => setCurrentStep(2)}
+            loading={loading}
+          />
+        )}
+
+        {/* Step 4 - Treasury & Commission Rates (previously Step 3) */}
+        {currentStep === 4 && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
@@ -394,12 +433,12 @@ export default function PSPOnboardingPage() {
                 </div>
                 <div>
                   <CardTitle>Treasury & Commission Rates</CardTitle>
-                  <CardDescription>Configure your fiat accounts and rates</CardDescription>
+                  <CardDescription>Configure your settlement wallets and rates</CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleStep3Submit} className="space-y-6">
+              <form onSubmit={handleStep4Submit} className="space-y-6">
                 <div>
                   <Label htmlFor="commissionRate">Commission Rate (%) *</Label>
                   <Input
@@ -442,7 +481,7 @@ export default function PSPOnboardingPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setCurrentStep(2)}
+                    onClick={() => setCurrentStep(3)}
                     className="flex-1"
                   >
                     Back
@@ -460,7 +499,8 @@ export default function PSPOnboardingPage() {
           </Card>
         )}
 
-        {currentStep === 4 && (
+        {/* Step 5 - Final/API Key (previously Step 4) */}
+        {currentStep === 5 && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
@@ -474,7 +514,7 @@ export default function PSPOnboardingPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleStep4Submit} className="space-y-6">
+              <form onSubmit={handleStep5Submit} className="space-y-6">
                 <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-6">
                   <div className="flex items-start gap-4">
                     <Key className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
@@ -507,7 +547,7 @@ export default function PSPOnboardingPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setCurrentStep(3)}
+                    onClick={() => setCurrentStep(4)}
                     className="flex-1"
                   >
                     Back

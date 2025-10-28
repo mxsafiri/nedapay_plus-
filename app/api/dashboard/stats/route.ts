@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
           monthly_commissions: true,
           fulfillment_count: true,
           commission_rate: true,
+          pending_settlement_amount: true,
+          total_settlements: true,
+          last_settlement_date: true,
         }
       });
 
@@ -61,6 +64,10 @@ export async function GET(request: NextRequest) {
           ordersFulfilled: providerProfile?.fulfillment_count || 0,
           ordersThisMonth: ordersThisMonth,
           commissionRate: providerProfile?.commission_rate || 0.003,
+          // Settlement info
+          pendingSettlement: providerProfile?.pending_settlement_amount || 0,
+          totalSettled: providerProfile?.total_settlements || 0,
+          lastSettlementDate: providerProfile?.last_settlement_date || null,
         }
       });
 

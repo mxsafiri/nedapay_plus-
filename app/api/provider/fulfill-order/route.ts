@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromRequest } from '@/lib/auth/server';
 import { sendOrderWebhookToSender } from '@/lib/webhooks/delivery';
+import { settleProviderOrder } from '@/lib/settlements/settlement-service';
 
 /**
  * POST /api/provider/fulfill-order
@@ -120,6 +121,24 @@ export async function POST(request: NextRequest) {
       });
 
       console.log('✅ Payment order completed. Commissions updated.');
+      
+      // 💰 NEW: Trigger instant USDC settlement
+      console.log('💰 Initiating instant settlement...');
+      settleProviderOrder(orderId)
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ Settlement completed: ${result.transactionId}`);
+            console.log(`   Amount: ${result.amount} USDC`);
+            console.log(`   Network: ${result.networkUsed}`);
+          } else {
+            console.error(`⚠️ Settlement failed: ${result.error}`);
+            console.log('   Order will be retried in next settlement batch');
+          }
+        })
+        .catch(error => {
+          console.error('⚠️ Settlement error:', error);
+        });
+      // Don't await - let it run async so provider sees immediate response
     }
 
     // Send webhook to bank

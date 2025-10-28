@@ -305,11 +305,20 @@ model payment_orders {
   platform_fee                  Float                     @default(0)  // Platform's share
   assigned_psp_id               String?                   @db.VarChar  // PSP assigned to fulfill
   
+  // Settlement Tracking (USDC settlements to providers)
+  settlement_tx_hash            String?                   @db.VarChar  // USDC settlement blockchain hash
+  settlement_network            String?                   @db.VarChar  // Blockchain network used for settlement
+  settlement_status             String                    @default("pending") @db.VarChar  // pending, completed, failed
+  settled_at                    DateTime?                 @db.Timestamptz(6)  // When settled
+  fulfillment_method            String?                   @db.VarChar  // mpesa, thunes, bank, etc
+  fulfillment_proof_url         String?                   @db.Text  // Screenshot/receipt URL
+  
   payment_order_recipients      payment_order_recipients?
   api_keys                      api_keys?                 @relation(fields: [api_key_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_api_keys_payment_orders")
   linked_addresses              linked_addresses?         @relation(fields: [linked_address_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_linked_addresses_payment_orders")
   sender_profiles               sender_profiles?          @relation(fields: [sender_profile_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_sender_profiles_payment_orders")
   tokens                        tokens                    @relation(fields: [token_payment_orders], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "payment_orders_tokens_payment_orders")
+  provider_profiles             provider_profiles?        @relation("assigned_provider", fields: [assigned_psp_id], references: [id], onUpdate: NoAction, map: "payment_orders_assigned_psp")
   payment_webhooks              payment_webhooks?
   receive_addresses             receive_addresses?
   transaction_logs              transaction_logs[]
@@ -399,7 +408,13 @@ model provider_profiles {
   total_commissions                  Float                                @default(0)      // Lifetime commissions
   fulfillment_count                  BigInt                               @default(0)      // Number of orders fulfilled
   supported_countries                Json?                                // Countries served
-  treasury_accounts                  Json?                                // Wallet addresses per network
+  treasury_accounts                  Json?                                // Wallet addresses per network (for USDC settlement)
+  fiat_infrastructure                Json?                                // Fiat fulfillment methods (M-Pesa, Thunes, banks)
+  
+  // Settlement Tracking
+  total_settlements                  Float                                @default(0)      // Total USDC settled to provider
+  pending_settlement_amount          Float                                @default(0)      // Pending settlement amount
+  last_settlement_date               DateTime?                            @db.Date         // Last settlement date
   
   // Sandbox Testing
   test_balance                       Float                                @default(50000)  // $50,000 USD test balance (PSPs need more)
@@ -409,6 +424,7 @@ model provider_profiles {
   lock_payment_orders                lock_payment_orders[]
   provider_currencies                provider_currencies[]
   provider_order_tokens              provider_order_tokens[]
+  payment_orders                     payment_orders[]                     @relation("assigned_provider")
   users                              users                                @relation(fields: [user_provider_profile], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "provider_profiles_users_provider_profile")
   provider_ratings                   provider_ratings?
   provision_bucket_provider_profiles provision_bucket_provider_profiles[]
@@ -596,6 +612,43 @@ model verification_tokens {
   user_verification_token String   @db.Uuid
   users                   users    @relation(fields: [user_verification_token], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "verification_tokens_users_verification_token")
 
+  @@schema("public")
+}
+
+model settlement_batches {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  batch_date         DateTime  @db.Date
+  provider_id        String    @db.VarChar
+  order_ids          Json
+  total_order_value  Float
+  total_commission   Float
+  settlement_amount  Float
+  usdc_amount        Float
+  settlement_tx_hash String?   @db.VarChar
+  settlement_network String?   @db.VarChar
+  blockchain_fee     Float?
+  status             String    @default("pending") @db.VarChar
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  completed_at       DateTime? @db.Timestamptz(6)
+  error_message      String?   @db.Text
+  retry_count        Int       @default(0)
+
+  @@index([provider_id, batch_date])
+  @@index([status, batch_date])
+  @@schema("public")
+}
+
+model settlement_retry_queue {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id       String    @db.Uuid
+  batch_id       String?   @db.Uuid
+  retry_count    Int       @default(0)
+  last_error     String?   @db.Text
+  next_retry_at  DateTime  @db.Timestamptz(6)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  resolved_at    DateTime? @db.Timestamptz(6)
+
+  @@index([next_retry_at], map: "idx_settlement_retry_queue_next_retry")
   @@schema("public")
 }
 

@@ -1,0 +1,252 @@
+/**
+ * Seed Test Accounts for NedaPay
+ * Creates test bank and PSP accounts for demo and testing
+ */
+
+import { PrismaClient } from '@/lib/generated/prisma';
+import { hashPassword } from '@/lib/auth/password'; // You may need to implement this
+
+const prisma = new PrismaClient();
+
+// Test account credentials
+export const TEST_CREDENTIALS = {
+  // Test Banks (Senders)
+  banks: [
+    {
+      email: 'test-bank@crdb.co.tz',
+      password: 'TestBank123!',
+      name: 'CRDB Bank (Test)',
+      tradingName: 'CRDB Test',
+      description: 'Test bank account for CRDB Tanzania'
+    },
+    {
+      email: 'test-bank@nmb.co.tz',
+      password: 'TestBank123!',
+      name: 'NMB Bank (Test)',
+      tradingName: 'NMB Test',
+      description: 'Test bank account for NMB Tanzania'
+    }
+  ],
+
+  // Test PSPs (Providers)
+  providers: [
+    {
+      email: 'test-psp@mpesa.com',
+      password: 'TestPSP123!',
+      name: 'M-Pesa Tanzania (Test)',
+      tradingName: 'M-Pesa Test',
+      description: 'Test PSP account with M-Pesa configuration'
+    },
+    {
+      email: 'test-psp@thunes.com',
+      password: 'TestPSP123!',
+      name: 'Thunes Payment Services (Test)',
+      tradingName: 'Thunes Test',
+      description: 'Test PSP account with Thunes API configuration'
+    }
+  ],
+
+  // Test Admin
+  admin: {
+    email: 'admin@nedapay.io',
+    password: 'AdminTest123!',
+    description: 'Test admin account for monitoring'
+  }
+};
+
+async function seedTestAccounts() {
+  console.log('🌱 Seeding test accounts...\n');
+
+  try {
+    // 1. Create Test Banks
+    console.log('📤 Creating test banks...');
+    for (const bank of TEST_CREDENTIALS.banks) {
+      console.log(`  Creating: ${bank.name}`);
+      
+      // Create user
+      const user = await prisma.users.create({
+        data: {
+          email: bank.email,
+          password: await hashPassword(bank.password),
+          scope: 'BANK',
+          kyb_verification_status: 'approved', // Pre-approved for testing
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      });
+
+      // Create sender profile
+      const senderProfile = await prisma.sender_profiles.create({
+        data: {
+          id: `test-sender-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          business_name: bank.name,
+          trading_name: bank.tradingName,
+          user_sender_profile: user.id,
+          markup_percentage: 0.002, // 0.2% markup
+          monthly_earnings: 0,
+          total_earnings: 0,
+          is_kyb_verified: true,
+          // Test balance for sandbox
+          test_balance: 100000, // $100k test balance
+          updated_at: new Date()
+        }
+      });
+
+      // Generate API key
+      const apiKey = await prisma.api_keys.create({
+        data: {
+          id: `test-api-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          key: `test_${bank.tradingName.toLowerCase().replace(/\s+/g, '_')}_${Math.random().toString(36).substr(2, 16)}`,
+          sender_profile_api_key: senderProfile.id,
+          is_active: true,
+          is_test: true,
+          scope: 'sender',
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      });
+
+      console.log(`  ✅ Created: ${bank.name}`);
+      console.log(`     Email: ${bank.email}`);
+      console.log(`     API Key: ${apiKey.key}\n`);
+    }
+
+    // 2. Create Test PSPs
+    console.log('📥 Creating test PSPs...');
+    for (const psp of TEST_CREDENTIALS.providers) {
+      console.log(`  Creating: ${psp.name}`);
+      
+      // Create user
+      const user = await prisma.users.create({
+        data: {
+          email: psp.email,
+          password: await hashPassword(psp.password),
+          scope: 'PSP',
+          kyb_verification_status: 'approved', // Pre-approved for testing
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      });
+
+      // Determine fiat infrastructure based on PSP type
+      const fiatInfra = psp.tradingName.includes('M-Pesa') 
+        ? {
+            mpesa: {
+              enabled: true,
+              provider: 'vodacom',
+              businessNumber: '+255754999888',
+              businessName: psp.name,
+              dailyLimit: 50000
+            },
+            thunes: { enabled: false },
+            bank: { enabled: false }
+          }
+        : {
+            mpesa: { enabled: false },
+            thunes: {
+              enabled: true,
+              accountId: 'test-thunes-account',
+              apiKey: 'test_thunes_api_key_sandbox',
+              environment: 'sandbox',
+              verified: true
+            },
+            bank: { enabled: false }
+          };
+
+      // Create provider profile
+      const providerProfile = await prisma.provider_profiles.create({
+        data: {
+          id: `test-provider-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          business_name: psp.name,
+          trading_name: psp.tradingName,
+          user_provider_profile: user.id,
+          commission_rate: 0.003, // 0.3% commission
+          monthly_commissions: 0,
+          total_commissions: 0,
+          fulfillment_count: BigInt(0),
+          is_kyb_verified: true,
+          is_active: true,
+          is_available: true,
+          
+          // Fiat infrastructure
+          fiat_infrastructure: fiatInfra,
+          
+          // Treasury accounts (where they receive USDC)
+          treasury_accounts: {
+            'hedera-testnet': '0.0.7099609', // Test Hedera wallet
+            'base-sepolia': '0x742d35Cc6634C0532925a3b844Bc454e4438f44e' // Test Base wallet
+          },
+          
+          // Supported countries
+          supported_countries: ['TZ', 'KE', 'UG', 'RW'],
+          
+          // Test balance
+          test_balance: 50000, // $50k test balance
+          
+          // Settlement tracking
+          pending_settlement_amount: 0,
+          total_settlements: 0,
+          
+          updated_at: new Date()
+        }
+      });
+
+      // Generate API key
+      const apiKey = await prisma.api_keys.create({
+        data: {
+          id: `test-api-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          key: `test_${psp.tradingName.toLowerCase().replace(/\s+/g, '_')}_${Math.random().toString(36).substr(2, 16)}`,
+          provider_profile_api_key: providerProfile.id,
+          is_active: true,
+          is_test: true,
+          scope: 'provider',
+          created_at: new Date(),
+          updated_at: new Date()
+        }
+      });
+
+      console.log(`  ✅ Created: ${psp.name}`);
+      console.log(`     Email: ${psp.email}`);
+      console.log(`     API Key: ${apiKey.key}`);
+      console.log(`     Fiat Method: ${Object.keys(fiatInfra).find(k => (fiatInfra as any)[k].enabled)}\n`);
+    }
+
+    // 3. Create Test Admin
+    console.log('👤 Creating test admin...');
+    await prisma.users.create({
+      data: {
+        email: TEST_CREDENTIALS.admin.email,
+        password: await hashPassword(TEST_CREDENTIALS.admin.password),
+        scope: 'ADMIN',
+        created_at: new Date(),
+        updated_at: new Date()
+      }
+    });
+    console.log(`  ✅ Created: Test Admin`);
+    console.log(`     Email: ${TEST_CREDENTIALS.admin.email}\n`);
+
+    console.log('✅ All test accounts created successfully!\n');
+    console.log('📝 See TEST_CREDENTIALS.md for login details\n');
+
+  } catch (error) {
+    console.error('❌ Error seeding test accounts:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+// Run if called directly
+if (require.main === module) {
+  seedTestAccounts()
+    .then(() => {
+      console.log('🎉 Seeding complete!');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Seeding failed:', error);
+      process.exit(1);
+    });
+}
+
+export { seedTestAccounts };

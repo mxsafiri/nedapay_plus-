@@ -15,7 +15,6 @@ import {
 import {
   ArrowUpRight,
   Zap,
-  Wallet,
   Coins,
   Activity,
   Clock,
@@ -161,12 +160,14 @@ export function Dashboard({ user, userRole }: DashboardProps) {
     if (userRole === 'provider' || userRole === 'psp') {
       return [
         {
-          title: "Total Liquidity",
-          value: dashboardStats ? `$${dashboardStats.liquidity.toFixed(2)}` : "$0.00",
-          subtitle: "Available funds",
-          icon: Wallet,
-          color: "bg-purple-50 dark:bg-purple-950/20",
-          iconColor: "text-purple-600 dark:text-purple-400"
+          title: "Pending Settlement",
+          value: dashboardStats ? `$${dashboardStats.pendingSettlement.toFixed(2)}` : "$0.00",
+          subtitle: dashboardStats?.lastSettlementDate 
+            ? `Last: ${new Date(dashboardStats.lastSettlementDate).toLocaleDateString()}` 
+            : "No settlements yet",
+          icon: Clock,
+          color: "bg-orange-50 dark:bg-orange-950/20",
+          iconColor: "text-orange-600 dark:text-orange-400"
         },
         {
           title: "Earnings",

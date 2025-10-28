@@ -16,7 +16,8 @@ import {
   Shield,
   Download,
   Activity,
-  LogOut
+  LogOut,
+  Wallet
 } from "lucide-react";
 
 const navigation = [
@@ -55,6 +56,12 @@ const navigation = [
     href: "/admin/transactions",
     icon: Activity,
     description: "Transaction logs and history"
+  },
+  {
+    name: "Settlements",
+    href: "/admin/settlements",
+    icon: Wallet,
+    description: "USDC settlement monitoring"
   },
   {
     name: "Currencies & Tokens",
