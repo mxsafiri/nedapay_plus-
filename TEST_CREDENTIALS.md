@@ -133,20 +133,15 @@ What they can do:
 
 ---
 
-## 👤 Test Admin Account
+## 🔐 Admin Access (Backstage)
 
-### Admin: NedaPay Admin (Test)
+### For NedaPay Internal Team Only
 ```
-Email:    admin@nedapay.io
-Password: AdminTest123!
-Role:     ADMIN
+URL: /backstage
+Password: [Your admin password - set in environment]
 
-Access to Backstage:
-- URL: /backstage
-- Password: (same as login)
-
-What they can do:
-✅ Monitor all settlements
+What you can access:
+✅ Monitor all settlements (/admin/settlements)
 ✅ Approve/reject KYB applications
 ✅ View all transactions
 ✅ Manage users
@@ -155,6 +150,8 @@ What they can do:
 ✅ View platform metrics
 ✅ Export reports
 ```
+
+**Note:** Admin access is via password-protected backstage, not user accounts.
 
 ---
 
