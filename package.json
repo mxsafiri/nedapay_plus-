@@ -21,7 +21,11 @@
     "routing:test": "tsx scripts/test-routing.ts",
     "api:test": "tsx scripts/test-api-endpoints.ts",
     "test:complete": "tsx scripts/test-complete-system.ts",
-    "test:phase6": "tsx scripts/test-phase6.ts"
+    "test:phase6": "tsx scripts/test-phase6.ts",
+    "demo:seed": "tsx scripts/seed-demo-ecosystem.ts",
+    "demo:bot": "tsx scripts/virtual-psp-bot.ts",
+    "demo:test": "tsx scripts/test-demo-data.ts",
+    "demo:verify": "tsx scripts/test-demo-complete.ts"
   },
   "dependencies": {
     "@hashgraph/sdk": "^2.75.0",

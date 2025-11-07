@@ -26,6 +26,7 @@ import {
   Plus
 } from "lucide-react";
 import { OrderQueue } from "@/components/provider/order-queue";
+import { DemoTriggerButton } from "@/components/demo/demo-trigger-button";
 
 interface DashboardProps {
   user: User;
@@ -298,6 +299,11 @@ export function Dashboard({ user, userRole }: DashboardProps) {
           </div>
 
           <TabsContent value="overview" className="space-y-8">
+            {/* Demo Trigger Button - Only for Demo Accounts */}
+            {(userRole === 'sender' || userRole === 'bank') && user?.email?.includes('demo@') && (
+              <DemoTriggerButton />
+            )}
+            
             {/* Network Selector Dropdown */}
             {networkStatus && (
               <div className="flex items-center justify-between">

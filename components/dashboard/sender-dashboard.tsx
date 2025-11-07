@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DemoTriggerButton } from "@/components/demo/demo-trigger-button";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -12,7 +13,11 @@ import {
 } from "lucide-react";
 
 
-export function SenderDashboard() {
+interface SenderDashboardProps {
+  user?: any; // Pass user from parent to check if demo account
+}
+
+export function SenderDashboard({ user }: SenderDashboardProps = {}) {
   const stats = [
     {
       title: "Total Volume",
@@ -46,6 +51,11 @@ export function SenderDashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Demo Trigger Button - Only for Demo Accounts */}
+      {user?.email?.includes('demo@') && (
+        <DemoTriggerButton />
+      )}
+      
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
