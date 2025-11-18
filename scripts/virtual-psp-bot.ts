@@ -238,10 +238,12 @@ async function findNewOrders() {
 
   try {
     // Find pending orders that aren't already being processed
+    // IMPORTANT: Only process TEST/DEMO orders (is_test_mode: true)
     const pendingOrders = await prisma.payment_orders.findMany({
       where: {
         status: { in: ['pending', 'confirmed'] },
         assigned_psp_id: null, // Not yet assigned
+        is_test_mode: true, // ⚠️ DEMO ONLY - Never touches live orders
       },
       orderBy: {
         created_at: 'asc', // FIFO
