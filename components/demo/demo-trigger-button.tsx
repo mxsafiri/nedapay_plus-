@@ -84,20 +84,46 @@ export function DemoTriggerButton() {
       attempts++;
 
       try {
-        // Use public demo status endpoint (no auth required)
-        const response = await fetch(`/api/demo/status/${orderId}`);
+        // Trigger backend processing (this auto-completes the order)
+        const processResponse = await fetch('/api/demo/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ orderId }),
+        });
 
-        if (response.ok) {
-          const data = await response.json();
+        if (processResponse.ok) {
+          const processData = await processResponse.json();
           
-          if (data.order) {
-            setOrder(prev => prev ? { ...prev, status: data.order.status } : null);
+          // Update order status with full details
+          if (processData.order) {
+            setOrder(prev => prev ? {
+              ...prev,
+              status: processData.status,
+              settlement: processData.order.settlement_tx_hash ? {
+                txHash: processData.order.settlement_tx_hash,
+                network: processData.order.settlement_network,
+                explorerUrl: `https://hashscan.io/testnet/transaction/${processData.order.settlement_tx_hash}`,
+              } : prev?.settlement,
+            } : null);
+          } else {
+            setOrder(prev => prev ? { ...prev, status: processData.status } : null);
+          }
 
-            if (data.order.status === 'completed') {
-              clearInterval(poll);
-            }
+          // Stop polling when completed
+          if (processData.status === 'completed') {
+            clearInterval(poll);
           }
         }
+
+        // Also check status via status endpoint as fallback
+        const statusResponse = await fetch(`/api/demo/status/${orderId}`);
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+          if (statusData.order && statusData.order.status === 'completed') {
+            clearInterval(poll);
+          }
+        }
+
       } catch (err) {
         console.error('Polling error:', err);
       }
