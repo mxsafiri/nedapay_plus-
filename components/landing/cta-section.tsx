@@ -53,10 +53,10 @@ export default function CTASection() {
               </button>
             </Link>
 
-            <Link href="/auth/login">
+            <Link href="https://regulator.ntzs.co.tz/auth/signin">
               <button className="group backdrop-blur-xl bg-white/10 hover:bg-white/20 text-white font-semibold px-10 py-5 rounded-xl border border-white/20 shadow-2xl transition-all duration-300 hover:scale-105">
                 <span className="flex items-center justify-center gap-2 text-lg">
-                  Sign In
+                  Regulator
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </span>
               </button>
