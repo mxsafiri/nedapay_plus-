@@ -46,10 +46,16 @@ export async function GET(request: NextRequest) {
       take: 100
     });
 
+    // Convert BigInt values to numbers for JSON serialization
+    const serializedProviders = providers.map(provider => ({
+      ...provider,
+      fulfillment_count: provider.fulfillment_count ? Number(provider.fulfillment_count) : 0
+    }));
+
     return NextResponse.json({
       success: true,
-      providers,
-      count: providers.length
+      providers: serializedProviders,
+      count: serializedProviders.length
     });
   } catch (error) {
     console.error('Error fetching providers:', error);

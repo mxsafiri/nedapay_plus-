@@ -5,6 +5,7 @@
 
 import { getNetworkSelector, type NetworkInfo, type TokenInfo } from './network-selector';
 import { getHederaService } from '@/lib/hedera';
+import { createEVMService } from './evm-service';
 import { prisma } from '@/lib/prisma';
 
 export interface TransactionParams {
@@ -189,28 +190,52 @@ export class TransactionRouter {
   }
 
   /**
-   * Execute transaction on EVM network (placeholder)
+   * Execute transaction on EVM network (Base, Ethereum, etc.)
    */
   private async executeOnEVM(
     network: NetworkInfo,
-    _token: TokenInfo,
-    _params: TransactionParams
+    token: TokenInfo,
+    params: TransactionParams
   ): Promise<TransactionResult> {
-    // TODO: Implement EVM transaction logic
-    // This would use ethers.js or viem to execute ERC-20 transfers
-    
-    console.log(`⚠️  EVM transaction not implemented yet for ${network.identifier}`);
-    
-    return {
-      success: false,
-      transactionId: '',
-      networkUsed: network.identifier,
-      networkType: 'evm',
-      fee: 0,
-      timestamp: new Date(),
-      attemptedNetworks: [],
-      error: 'EVM transactions not yet implemented',
-    };
+    const evmService = createEVMService(network);
+
+    try {
+      // Convert amount to token's smallest unit
+      const amountInSmallestUnit = BigInt(
+        Math.floor(params.amount * Math.pow(10, token.decimals))
+      );
+
+      const result = await evmService.transferToken({
+        tokenAddress: token.contractAddress,
+        from: params.from,
+        to: params.to,
+        amount: amountInSmallestUnit,
+        memo: params.memo,
+      });
+
+      return {
+        success: result.success,
+        transactionId: result.transactionId || '',
+        transactionHash: result.transactionHash,
+        networkUsed: network.identifier,
+        networkType: 'evm',
+        fee: parseFloat(result.fee || '0'),
+        timestamp: result.timestamp,
+        attemptedNetworks: [],
+        error: result.error,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        transactionId: '',
+        networkUsed: network.identifier,
+        networkType: 'evm',
+        fee: 0,
+        timestamp: new Date(),
+        attemptedNetworks: [],
+        error: error.message,
+      };
+    }
   }
 
   /**

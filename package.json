@@ -25,7 +25,10 @@
     "demo:seed": "tsx scripts/seed-demo-ecosystem.ts",
     "demo:bot": "tsx scripts/virtual-psp-bot.ts",
     "demo:test": "tsx scripts/test-demo-data.ts",
-    "demo:verify": "tsx scripts/test-demo-complete.ts"
+    "demo:verify": "tsx scripts/test-demo-complete.ts",
+    "liquidity:setup": "tsx scripts/setup-liquidity-simple.ts",
+    "liquidity:setup-sql": "psql $DATABASE_URL < scripts/setup-internal-provider.sql",
+    "liquidity:check": "tsx scripts/check-liquidity.ts"
   },
   "dependencies": {
     "@hashgraph/sdk": "^2.75.0",
@@ -46,6 +49,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
+    "ethers": "^6.13.0",
     "lucide-react": "^0.511.0",
     "next": "latest",
     "next-themes": "^0.4.6",
