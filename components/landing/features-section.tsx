@@ -5,28 +5,28 @@ import Image from 'next/image';
 
 const features = [
   {
-    title: 'For Banks',
-    description: 'White-label infrastructure for cross-border payments. Earn revenue on every transaction.',
-    highlight: 'Revenue Model',
+    title: 'Stablecoin Off-Ramp',
+    description: 'Convert USDC/USDT to local fiat in 1-2 minutes. 9 currencies, automated settlement, API-first.',
+    highlight: 'NOW AVAILABLE',
+    image: '/partner logos/NEDApay lOGO.jpg',
+  },
+  {
+    title: 'For Crypto Exchanges',
+    description: 'Enable instant fiat withdrawals for your users. Automate payouts to bank accounts across Africa.',
+    highlight: 'Web3 Ready',
     images: ['/partner logos/crdb.png', '/partner logos/Absa_Logo.svg', '/partner logos/TCB.png'],
   },
   {
     title: 'API-First Platform',
-    description: 'Consume NEDApay APIs for instant access to 130+ countries. BaaS infrastructure built for scale.',
+    description: 'Simple REST API. Webhooks for status updates. Test mode for development. Production-ready in minutes.',
     highlight: 'Integration',
     image: '/partner logos/THUNES.png',
   },
   {
     title: 'Fully Regulated',
-    description: 'Licensed by Central Bank of Tanzania under the FinTech regulatory Sandbox with full AML/KYC compliant with audit trails and reserve management.',
+    description: 'Licensed by Central Bank of Tanzania under the FinTech regulatory Sandbox with full AML/KYC compliance.',
     highlight: 'Compliance',
     image: '/partner logos/BOT.png',
-  },
-  {
-    title: 'Instant Settlement',
-    description: 'USDC-backed settlements on blockchain. Real-time fiat clearance in destination countries.',
-    highlight: 'Settlement',
-    image: '/partner logos/NEDApay lOGO.jpg',
   },
 ];
 

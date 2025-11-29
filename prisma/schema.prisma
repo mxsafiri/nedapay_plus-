@@ -310,8 +310,13 @@ model payment_orders {
   settlement_network            String?                   @db.VarChar  // Blockchain network used for settlement
   settlement_status             String                    @default("pending") @db.VarChar  // pending, completed, failed
   settled_at                    DateTime?                 @db.Timestamptz(6)  // When settled
-  fulfillment_method            String?                   @db.VarChar  // mpesa, thunes, bank, etc
+  fulfillment_method            String?                   @db.VarChar  // mpesa, thunes, bank, paycrest, etc
   fulfillment_proof_url         String?                   @db.Text  // Screenshot/receipt URL
+  
+  // Paycrest Off-Ramp Tracking
+  paycrest_order_id             String?                   @db.VarChar  // Paycrest order ID
+  paycrest_valid_until          DateTime?                 @db.Timestamptz(6)  // Paycrest order expiry
+  failure_reason                String?                   @db.Text  // Reason if order failed
   
   payment_order_recipients      payment_order_recipients?
   api_keys                      api_keys?                 @relation(fields: [api_key_payment_orders], references: [id], onUpdate: NoAction, map: "payment_orders_api_keys_payment_orders")

@@ -31,7 +31,7 @@ export default function CTASection() {
           </div>
 
           <h2 className="text-4xl md:text-6xl font-bold text-white mb-6">
-            Ready to be part of the biggest
+              Ready to be part of the biggest
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
               digital asset reserve in Tanzania?

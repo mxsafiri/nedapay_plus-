@@ -89,25 +89,38 @@ export function SenderDashboard({ user }: SenderDashboardProps = {}) {
 
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card>
+        <Card className="border-green-500/20 bg-green-500/5">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowUpRight className="h-5 w-5 text-green-600" />
-              Send Money (Onramp)
+              <ArrowDownLeft className="h-5 w-5 text-green-600" />
+              Stablecoin Off-Ramp ✨
             </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              NOW AVAILABLE
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Convert fiat currency to cryptocurrency for your customers. 
-              Enable seamless onramp experiences with our API.
+              Convert USDC/USDT to local fiat currency instantly. 
+              Automated settlement in 1-2 minutes to 9 currencies.
             </p>
+            <div className="flex flex-wrap gap-1 mb-2">
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">NGN</span>
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">KES</span>
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">UGX</span>
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">TZS</span>
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">GHS</span>
+              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">+4 more</span>
+            </div>
             <div className="space-y-2">
-              <Button className="w-full" size="sm">
-                <CreditCard className="mr-2 h-4 w-4" />
-                Start Onramp Transaction
+              <Button className="w-full bg-green-600 hover:bg-green-700" size="sm">
+                <DollarSign className="mr-2 h-4 w-4" />
+                Create Off-Ramp Order
               </Button>
-              <Button variant="outline" className="w-full" size="sm">
-                View API Documentation
+              <Button variant="outline" className="w-full" size="sm" asChild>
+                <a href="/docs/api" target="_blank">
+                  View API Documentation
+                </a>
               </Button>
             </div>
           </CardContent>
@@ -116,22 +129,25 @@ export function SenderDashboard({ user }: SenderDashboardProps = {}) {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowDownLeft className="h-5 w-5 text-blue-600" />
-              Receive Money (Offramp)
+              <ArrowUpRight className="h-5 w-5 text-blue-600" />
+              Cross-Border Payments
             </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1">
+              COMING SOON WITH THUNES
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Convert cryptocurrency to fiat currency for your customers. 
-              Provide easy cash-out solutions.
+              Traditional fiat-to-fiat corridors for banks. 
+              Access 130+ countries with our Thunes partnership.
             </p>
             <div className="space-y-2">
-              <Button className="w-full" size="sm">
-                <DollarSign className="mr-2 h-4 w-4" />
-                Start Offramp Transaction
+              <Button className="w-full" size="sm" disabled>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Join Waitlist
               </Button>
-              <Button variant="outline" className="w-full" size="sm">
-                View Integration Guide
+              <Button variant="outline" className="w-full" size="sm" disabled>
+                Learn More
               </Button>
             </div>
           </CardContent>
@@ -199,28 +215,53 @@ export function SenderDashboard({ user }: SenderDashboardProps = {}) {
       {/* Getting Started */}
       <Card>
         <CardHeader>
-          <CardTitle>Getting Started as a Sender</CardTitle>
+          <CardTitle>Getting Started with Stablecoin Off-Ramp</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <p className="text-muted-foreground">
-              As a Sender, you can provide onramp and offramp services to your customers. 
-              Here&apos;s how to get started:
+              Launch your stablecoin-to-fiat service in minutes. Perfect for crypto exchanges, 
+              Web3 companies, and fintech platforms.
             </p>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <h4 className="font-semibold text-sm text-blue-900 mb-2">
+                ✨ What You Can Do
+              </h4>
+              <ul className="text-xs text-blue-800 space-y-1">
+                <li>• Accept USDC/USDT from your users</li>
+                <li>• Deliver fiat to bank accounts in 1-2 minutes</li>
+                <li>• Support 9 African & global currencies</li>
+                <li>• Earn revenue on every transaction</li>
+              </ul>
+            </div>
+            
             <ol className="list-decimal list-inside space-y-2 text-sm">
-              <li>Complete your account verification</li>
-              <li>Generate your API keys in Settings</li>
-              <li>Review our API documentation</li>
-              <li>Configure webhooks for transaction updates</li>
-              <li>Run test transactions</li>
-              <li>Go live with real transactions</li>
+              <li>Complete KYB verification (if not done)</li>
+              <li>Generate your API keys in Settings → API Keys</li>
+              <li>Review <a href="/docs/api" className="text-blue-600 underline">API documentation</a></li>
+              <li>Add your webhook URL for status updates</li>
+              <li>Test with sandbox environment (test API keys)</li>
+              <li>Go live with production keys</li>
             </ol>
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mt-4">
+              <p className="text-xs text-amber-800">
+                <strong>Need Help?</strong> Check our <a href="/docs/quick-start" className="underline">Quick Start Guide</a> 
+                or reach out to support@nedapay.com
+              </p>
+            </div>
+            
             <div className="flex gap-2 pt-4">
-              <Button>
-                View Documentation
+              <Button asChild>
+                <a href="/docs/api" target="_blank">
+                  API Documentation
+                </a>
               </Button>
-              <Button variant="outline">
-                Contact Support
+              <Button variant="outline" asChild>
+                <a href="/settings/api-keys">
+                  Generate API Keys
+                </a>
               </Button>
             </div>
           </div>

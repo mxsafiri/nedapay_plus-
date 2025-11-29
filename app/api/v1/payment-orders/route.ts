@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendOrderWebhookToSender } from '@/lib/webhooks/delivery';
 import { prisma } from '@/lib/prisma';
 import { MockBlockchainService, shouldUseMockService } from '@/lib/blockchain/mock-service';
+import { getPaycrestService } from '@/lib/offramp/paycrest-service';
+import { createEVMService } from '@/lib/blockchain/evm-service';
+import { getNetworkSelector } from '@/lib/blockchain/network-selector';
 import crypto from 'crypto';
 
 /**
@@ -135,11 +138,17 @@ async function assignPSP(_toCurrency: string, _amount: number) {
 
 /**
  * POST /api/v1/payment-orders
- * Create a new cross-border payment order
+ * Create a new stablecoin off-ramp order (USDC/USDT → Fiat)
+ * 
+ * Use Cases:
+ * - Crypto exchanges offering fiat withdrawals
+ * - Web3 companies paying contractors
+ * - DeFi platforms enabling fiat off-ramps
+ * - Stablecoin remittance services
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('📥 Payment Order API - Received request');
+    console.log('📥 Stablecoin Off-Ramp API - Received request');
 
     // Authenticate
     const auth = await authenticateRequest(request);
@@ -161,10 +170,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Only senders/banks can create payment orders
-    if (user.scope.toLowerCase() !== 'sender' && user.scope.toLowerCase() !== 'bank') {
+    // Only senders can create off-ramp orders
+    if (user.scope.toLowerCase() !== 'sender') {
       return NextResponse.json(
-        { success: false, error: 'Only banks can create payment orders' },
+        { success: false, error: 'Only senders can create off-ramp orders' },
         { status: 403 }
       );
     }
@@ -179,21 +188,36 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body = await request.json();
     const {
-      fromCurrency,
-      toCurrency,
-      amount,
-      recipientDetails,
+      amount,              // USDC/USDT amount
+      token = 'USDC',      // Default to USDC
+      toCurrency,          // Destination currency (NGN, KES, TZS, etc.)
+      recipientDetails: {
+        bankCode,
+        accountNumber,
+        accountName,
+        memo
+      } = {},
       reference,
       webhookUrl
     } = body;
 
     // Validate required fields
-    if (!fromCurrency || !toCurrency || !amount || !recipientDetails) {
+    if (!amount || !toCurrency || !bankCode || !accountNumber || !accountName) {
       return NextResponse.json(
         { 
           success: false, 
           error: 'Missing required fields',
-          required: ['fromCurrency', 'toCurrency', 'amount', 'recipientDetails']
+          required: {
+            amount: 'USDC/USDT amount (e.g., 100)',
+            token: 'USDC or USDT (optional, defaults to USDC)',
+            toCurrency: 'Destination currency (e.g., NGN, KES, TZS)',
+            recipientDetails: {
+              bankCode: 'Bank code (e.g., GTB, CRDB)',
+              accountNumber: 'Recipient account number',
+              accountName: 'Recipient account name',
+              memo: 'Optional payment memo'
+            }
+          }
         },
         { status: 400 }
       );
@@ -206,157 +230,296 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get exchange rate (placeholder - would call external API)
-    const exchangeRate = 0.00245; // TZS to CNY example rate
-    const toAmount = amount * exchangeRate;
-
-    // Calculate fees
-    const markupPercentage = senderProfile.markup_percentage || 0.002; // 0.2% default
-    const bankMarkup = toAmount * markupPercentage;
-    
-    const platformFee = 0.50; // $0.50 per transaction
-    const pspCommissionRate = 0.003; // 0.3% default
-    const pspCommission = toAmount * pspCommissionRate;
-
-    const amountInUsd = fromCurrency === 'USD' ? amount : toAmount; // Simplified
-
-    // Assign PSP
-    const assignedPSP = await assignPSP(toCurrency, toAmount);
-    
-    if (!assignedPSP) {
+    if (!['USDC', 'USDT'].includes(token.toUpperCase())) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: 'No available PSPs for this currency corridor. Please try again later.' 
-        },
-        { status: 503 }
+        { success: false, error: 'Only USDC and USDT tokens supported' },
+        { status: 400 }
       );
     }
 
-    // Get default token (USDC)
-    const defaultToken = await prisma.tokens.findFirst({
-      where: { symbol: 'USDC' }
+    // Check Paycrest support
+    const paycrest = getPaycrestService();
+    
+    if (!paycrest.isCurrencySupported(toCurrency)) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Currency ${toCurrency} not supported`,
+          supportedCurrencies: paycrest.getSupportedCurrencies()
+        },
+        { status: 400 }
+      );
+    }
+
+    console.log(`✅ ${toCurrency} supported by Paycrest`);
+
+    // Validate recipient
+    const validation = paycrest.validateRecipient({
+      institution: bankCode,
+      accountIdentifier: accountNumber,
+      accountName: accountName,
+      currency: toCurrency,
+      memo: memo
     });
 
-    if (!defaultToken) {
+    if (!validation.valid) {
       return NextResponse.json(
-        { success: false, error: 'System configuration error: No default token found' },
+        { success: false, error: 'Invalid recipient details', details: validation.errors },
+        { status: 400 }
+      );
+    }
+
+    // Calculate fees
+    const markupPercentage = senderProfile.markup_percentage || 0.005; // 0.5% default for crypto
+    const senderMarkup = amount * markupPercentage;
+    const platformFee = 2.00; // $2.00 per off-ramp transaction
+
+    // Get token record
+    const tokenRecord = await prisma.tokens.findFirst({
+      where: { 
+        symbol: token.toUpperCase(),
+        is_enabled: true 
+      }
+    });
+
+    if (!tokenRecord) {
+      return NextResponse.json(
+        { success: false, error: `${token} token not configured in system` },
         { status: 500 }
       );
     }
 
-    // Generate mock transaction if in test mode
-    let mockTx = null;
-    if (isTestMode || shouldUseMockService(isTestMode)) {
-      mockTx = await MockBlockchainService.mockSendTransaction({
-        from: 'test_bank_address',
-        to: recipientDetails.accountNumber || recipientDetails.address || 'test_recipient',
-        amount: toAmount,
-        network: 'hedera-testnet'
-      });
-      console.log('🧪 Mock transaction generated:', mockTx.txHash);
-    }
+    // Create order ID
+    const orderId = isTestMode 
+      ? `test_offramp_${Date.now()}_${crypto.randomBytes(6).toString('hex')}` 
+      : `offramp_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
 
-    // Create payment order
-    const orderId = isTestMode ? `test_order_${Date.now()}_${crypto.randomBytes(8).toString('hex')}` : `order_${Date.now()}_${crypto.randomBytes(8).toString('hex')}`;
+    console.log(`📝 Creating off-ramp order: ${orderId}`);
+
+    // === PAYCREST INTEGRATION ===
     
-    const order = await prisma.payment_orders.create({
-      data: {
-        id: orderId,
-        amount: amount,
-        amount_paid: toAmount,
-        amount_returned: 0,
-        amount_in_usd: amountInUsd,
-        sender_fee: 0,
-        rate: exchangeRate,
-        receive_address_text: recipientDetails.accountNumber || recipientDetails.address || 'pending',
-        status: isTestMode ? 'confirmed' : 'pending', // Auto-confirm in test mode
-        sender_profile_payment_orders: senderProfile.id,
-        token_payment_orders: defaultToken.id,
-        network_fee: mockTx ? mockTx.fee : 0,
-        fee_percent: markupPercentage,
-        percent_settled: isTestMode ? 100 : 0, // Auto-settle in test mode
-        protocol_fee: platformFee,
-        reference: reference || null,
-        
-        // Test mode tracking
-        is_test_mode: isTestMode,
-        tx_hash: mockTx ? mockTx.txHash : null,
-        tx_id: mockTx ? mockTx.txId : null,
-        network_used: mockTx ? mockTx.network : null,
-        block_number: mockTx ? mockTx.blockNumber : 0,
-        
-        // Revenue tracking
-        bank_markup: bankMarkup,
-        psp_commission: pspCommission,
-        platform_fee: platformFee,
-        assigned_psp_id: assignedPSP.id,
-        
-        created_at: new Date(),
-        updated_at: new Date()
-      }
-    });
+    try {
+      // Step 1: Get Paycrest rate
+      console.log(`📊 Getting Paycrest rate for ${amount} ${token} → ${toCurrency}...`);
+      
+      const paycrestRate = await paycrest.getRate(
+        token.toUpperCase() as 'USDC' | 'USDT',
+        amount.toString(),
+        toCurrency
+      );
+      
+      console.log(`💱 Paycrest rate: 1 ${token} = ${paycrestRate.rate} ${toCurrency}`);
+      console.log(`💰 Expected payout: ${paycrestRate.estimatedPayout} ${toCurrency}`);
 
-    // Update PSP fulfillment count
-    await prisma.provider_profiles.update({
-      where: { id: assignedPSP.id },
-      data: {
-        fulfillment_count: {
-          increment: 1
+      // Step 2: Create order in database (pending)
+      const order = await prisma.payment_orders.create({
+        data: {
+          id: orderId,
+          amount: parseFloat(amount),
+          amount_paid: parseFloat(paycrestRate.estimatedPayout),
+          amount_returned: 0,
+          amount_in_usd: parseFloat(amount), // Already in USD
+          sender_fee: paycrestRate.fees.senderFee,
+          rate: parseFloat(paycrestRate.rate),
+          receive_address_text: accountNumber,
+          status: 'pending',
+          sender_profile_payment_orders: senderProfile.id,
+          token_payment_orders: tokenRecord.id,
+          network_fee: paycrestRate.fees.transactionFee,
+          fee_percent: markupPercentage,
+          percent_settled: 0,
+          protocol_fee: platformFee,
+          reference: reference || null,
+          is_test_mode: isTestMode,
+          
+          // Paycrest-specific tracking
+          fulfillment_method: 'paycrest',
+          
+          // Revenue tracking
+          bank_markup: senderMarkup,
+          psp_commission: 0, // No PSP involved
+          platform_fee: platformFee,
+          
+          created_at: new Date(),
+          updated_at: new Date()
         }
-      }
-    });
+      });
 
-    // Send webhooks asynchronously (don't wait for completion)
-    // Send to bank if webhook configured
-    if (senderProfile && webhookUrl) {
-      sendOrderWebhookToSender(webhookUrl, {
+      console.log(`✅ Order created in database: ${order.id}`);
+
+      // Step 3: Create Paycrest order
+      console.log(`📤 Creating Paycrest off-ramp order...`);
+      
+      const paycrestOrder = await paycrest.createOrder({
+        amount: amount.toString(),
+        token: token.toUpperCase() as 'USDC' | 'USDT',
+        network: 'base',
+        rate: paycrestRate.rate,
+        recipient: {
+          institution: bankCode,
+          accountIdentifier: accountNumber,
+          accountName: accountName,
+          currency: toCurrency,
+          memo: memo || `NedaPay ${orderId.substring(0, 12)}`
+        },
+        reference: orderId,
+        returnAddress: process.env.BASE_REFUND_ADDRESS || process.env.BASE_TREASURY_ADDRESS!
+      });
+
+      console.log(`✅ Paycrest order created: ${paycrestOrder.id}`);
+      console.log(`📍 Send ${token} to: ${paycrestOrder.receiveAddress}`);
+      console.log(`⏰ Valid until: ${paycrestOrder.validUntil}`);
+
+      // Step 4: Update order with Paycrest details
+      await prisma.payment_orders.update({
+        where: { id: orderId },
+        data: {
+          paycrest_order_id: paycrestOrder.id,
+          receive_address_text: paycrestOrder.receiveAddress,
+          paycrest_valid_until: new Date(paycrestOrder.validUntil),
+          status: 'confirmed',
+          updated_at: new Date()
+        }
+      });
+
+      // Step 5: Send USDC on Base chain to Paycrest
+      console.log(`💸 Sending ${token} on Base to Paycrest...`);
+      
+      // Get Base network
+      const networkSelector = getNetworkSelector();
+      const baseNetwork = await networkSelector.getNetworkByIdentifier('base');
+
+      if (!baseNetwork) {
+        throw new Error('Base network not configured. Please contact support.');
+      }
+
+      const baseService = createEVMService(baseNetwork);
+
+      const txResult = await baseService.transferToken({
+        tokenAddress: tokenRecord.contract_address,
+        from: process.env.BASE_TREASURY_ADDRESS!,
+        to: paycrestOrder.receiveAddress,
+        amount: BigInt(Math.floor(parseFloat(amount) * 1_000_000)) // USDC has 6 decimals
+      });
+
+      if (!txResult.success) {
+        throw new Error(`Base transfer failed: ${txResult.error}`);
+      }
+
+      console.log(`✅ ${token} sent on Base: ${txResult.transactionHash}`);
+
+      // Step 6: Update order with transaction details
+      await prisma.payment_orders.update({
+        where: { id: orderId },
+        data: {
+          status: 'processing',
+          tx_hash: txResult.transactionHash,
+          tx_id: txResult.transactionId,
+          network_used: 'base',
+          updated_at: new Date()
+        }
+      });
+
+      // Step 7: Log transaction
+      await prisma.transaction_logs.create({
+        data: {
+          id: `paycrest_offramp_${orderId}_${Date.now()}`,
+          payment_order_transactions: orderId,
+          tx_hash: txResult.transactionHash!,
+          network: 'base',
+          status: 'paycrest_initiated',
+          metadata: {
+            type: 'paycrest_offramp',
+            paycrest_order_id: paycrestOrder.id,
+            receive_address: paycrestOrder.receiveAddress,
+            valid_until: paycrestOrder.validUntil,
+            expected_payout: paycrestOrder.expectedPayout
+          },
+          created_at: new Date()
+        }
+      });
+
+      console.log(`✅ Off-ramp order processing via Paycrest`);
+
+      // Step 8: Send webhook to sender (if configured)
+      if (webhookUrl) {
+        sendOrderWebhookToSender(webhookUrl, {
+          orderId: order.id,
+          status: 'processing',
+          fromAmount: amount,
+          fromCurrency: token,
+          toAmount: parseFloat(paycrestRate.estimatedPayout),
+          toCurrency: toCurrency,
+          reference: reference,
+          txHash: txResult.transactionHash,
+          networkUsed: 'base'
+        }).catch(err => console.error('Webhook delivery failed:', err));
+      }
+
+      // Success response
+      return NextResponse.json({
+        success: true,
         orderId: order.id,
-        status: order.status,
+        status: 'processing',
         fromAmount: amount,
-        fromCurrency: fromCurrency,
-        toAmount: toAmount,
+        fromCurrency: token,
+        toAmount: parseFloat(paycrestRate.estimatedPayout),
         toCurrency: toCurrency,
-        bankMarkup: bankMarkup,
-        reference: reference
-      }).catch(err => console.error('Webhook delivery to sender failed:', err));
+        exchangeRate: parseFloat(paycrestRate.rate),
+        fees: {
+          senderMarkup: senderMarkup,
+          platformFee: platformFee,
+          paycrestSenderFee: paycrestRate.fees.senderFee,
+          networkFee: paycrestRate.fees.transactionFee,
+          totalFees: senderMarkup + platformFee + paycrestRate.fees.senderFee + paycrestRate.fees.transactionFee
+        },
+        paycrest: {
+          orderId: paycrestOrder.id,
+          receiveAddress: paycrestOrder.receiveAddress,
+          validUntil: paycrestOrder.validUntil
+        },
+        blockchain: {
+          network: 'base',
+          transactionHash: txResult.transactionHash
+        },
+        estimatedCompletion: '1-2 minutes',
+        createdAt: order.created_at.toISOString(),
+        reference: reference || null,
+        testMode: isTestMode,
+        message: 'Off-ramp order created successfully. Fiat will be delivered to recipient bank account within 1-2 minutes.'
+      });
+
+    } catch (paycrestError: any) {
+      console.error('❌ Paycrest fulfillment error:', paycrestError);
+      
+      // Try to mark order as failed if it was created
+      try {
+        await prisma.payment_orders.updateMany({
+          where: { id: orderId },
+          data: {
+            status: 'failed',
+            updated_at: new Date()
+          }
+        });
+      } catch (dbError) {
+        console.error('Failed to update order status:', dbError);
+      }
+
+      return NextResponse.json({
+        success: false,
+        error: 'Off-ramp fulfillment failed',
+        details: paycrestError.message,
+        orderId: orderId
+      }, { status: 500 });
     }
 
-    // TODO: Send webhook to PSP (need to get PSP webhook URL from provider_profiles)
-
-    console.log('✅ Payment order created:', orderId);
-
-    // Return response
-    return NextResponse.json({
-      success: true,
-      orderId: order.id,
-      status: order.status,
-      fromAmount: amount,
-      fromCurrency: fromCurrency,
-      toAmount: toAmount,
-      toCurrency: toCurrency,
-      exchangeRate: exchangeRate,
-      bankMarkup: bankMarkup,
-      estimatedCompletion: isTestMode ? new Date().toISOString() : new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      createdAt: order.created_at.toISOString(),
-      reference: reference || null,
-      testMode: isTestMode,
-      ...(isTestMode && mockTx && {
-        testData: {
-          txHash: mockTx.txHash,
-          network: mockTx.network,
-          message: 'This is a test transaction. No real funds were moved.'
-        }
-      })
-    });
-
-  } catch (error) {
-    console.error('❌ Error creating payment order:', error);
+  } catch (error: any) {
+    console.error('❌ Error creating off-ramp order:', error);
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Failed to create payment order',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: 'Failed to create off-ramp order',
+        details: error.message
       },
       { status: 500 }
     );
