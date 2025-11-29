@@ -110,6 +110,42 @@ export async function GET(request: NextRequest) {
         }
       });
 
+      // Paycrest off-ramp stats
+      const paycrestOrders = await prisma.payment_orders.count({
+        where: {
+          sender_profile_payment_orders: senderProfile?.id || '',
+          paycrest_order_id: {
+            not: null
+          }
+        }
+      });
+
+      const paycrestCompleted = await prisma.payment_orders.count({
+        where: {
+          sender_profile_payment_orders: senderProfile?.id || '',
+          paycrest_order_id: {
+            not: null
+          },
+          status: 'completed'
+        }
+      });
+
+      const paycrestVolume = await prisma.payment_orders.aggregate({
+        where: {
+          sender_profile_payment_orders: senderProfile?.id || '',
+          paycrest_order_id: {
+            not: null
+          }
+        },
+        _sum: {
+          amount: true
+        }
+      });
+
+      const successRate = paycrestOrders > 0 
+        ? Math.round((paycrestCompleted / paycrestOrders) * 100)
+        : 0;
+
       return NextResponse.json({
         success: true,
         data: {
@@ -121,6 +157,10 @@ export async function GET(request: NextRequest) {
           monthlyRevenue: senderProfile?.monthly_earnings || 0,
           markupRate: senderProfile?.markup_percentage || 0.002,
           ordersThisMonth: ordersStats._count || 0,
+          // Paycrest off-ramp data
+          paycrestOrders: paycrestOrders,
+          totalVolume: paycrestVolume._sum.amount || 0,
+          successRate: successRate,
         }
       });
 

@@ -372,39 +372,39 @@ export function Dashboard({ user, userRole }: DashboardProps) {
               </CardContent>
             </Card>
 
-            {/* Cost Savings Breakdown */}
-            {savingsData && savingsData.savings.totalTransactions > 0 && (
-              <Card className="border border-border/50 shadow-xl backdrop-blur-sm bg-background/95 rounded-2xl overflow-hidden">
-                <CardHeader className="pb-4 pt-6 px-6 bg-muted/20 border-b border-border/30">
+            {/* Paycrest Off-Ramp Stats - Show real data */}
+            {dashboardStats && dashboardStats.paycrestOrders > 0 && (
+              <Card className="border border-green-500/20 bg-green-500/5 shadow-xl backdrop-blur-sm rounded-2xl overflow-hidden">
+                <CardHeader className="pb-4 pt-6 px-6 border-b border-green-500/20">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-semibold">Cost Savings (30 Days)</CardTitle>
-                    <span className="text-sm text-green-600 dark:text-green-400 font-semibold">99.67% cheaper</span>
+                    <CardTitle className="text-xl font-semibold">Stablecoin Off-Ramp (30 Days)</CardTitle>
+                    <span className="text-sm text-green-600 dark:text-green-400 font-semibold">✨ Active</span>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Hedera Transactions</p>
-                      <p className="text-2xl font-black text-foreground">{savingsData.savings.hederaTransactions}</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Paycrest Orders</p>
+                      <p className="text-2xl font-black text-foreground">{dashboardStats.paycrestOrders}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Base Transactions</p>
-                      <p className="text-2xl font-black text-foreground">{savingsData.savings.baseTransactions}</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Total Volume</p>
+                      <p className="text-2xl font-black text-foreground">${dashboardStats.totalVolume?.toFixed(2) || '0.00'}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Actual Cost</p>
-                      <p className="text-2xl font-black text-foreground">${savingsData.savings.actualCost.toFixed(2)}</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Avg. Settlement</p>
+                      <p className="text-2xl font-black text-foreground">1-2 min</p>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">You Saved</p>
-                      <p className="text-2xl font-black text-green-600 dark:text-green-400">${savingsData.savings.savings.toFixed(2)}</p>
+                      <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">Success Rate</p>
+                      <p className="text-2xl font-black text-green-600 dark:text-green-400">{dashboardStats.successRate || 0}%</p>
                     </div>
                   </div>
-                  {savingsData.projection && (
-                    <div className="mt-6 pt-6 border-t border-border/30">
-                      <p className="text-sm text-muted-foreground mb-2">Projected annual savings: <span className="font-semibold text-green-600 dark:text-green-400">${savingsData.projection.projectedAnnual.toFixed(2)}</span></p>
-                    </div>
-                  )}
+                  <div className="mt-6 pt-6 border-t border-green-500/20">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Supported: NGN, KES, TZS, UGX, GHS, XOF + 3 more currencies
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             )}
