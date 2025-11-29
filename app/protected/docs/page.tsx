@@ -12,7 +12,10 @@ import {
   Copy,
   Book,
   Zap,
-  Shield
+  Shield,
+  Coins,
+  TrendingUp,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -194,18 +197,63 @@ export default function DocsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
-                  <h4 className="font-semibold text-green-900 dark:text-green-300 mb-2">✨ Stablecoin Off-Ramp Available</h4>
-                  <p className="text-sm text-green-800 dark:text-green-400 mb-2">
-                    Send USDC/USDT and receive local currency in 9+ African countries via Paycrest integration.
-                  </p>
-                  <div className="text-xs text-green-700 dark:text-green-500 flex flex-wrap gap-2">
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇳🇬 NGN</span>
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇰🇪 KES</span>
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇹🇿 TZS</span>
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇺🇬 UGX</span>
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇬🇭 GHS</span>
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">+ 4 more</span>
+                <div className="relative overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-teal-950/20 border border-green-200 dark:border-green-800 rounded-xl p-6 mb-6 shadow-sm">
+                  {/* Animated background elements */}
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute -top-4 -right-4 w-24 h-24 bg-green-200/30 dark:bg-green-700/20 rounded-full blur-2xl animate-pulse"></div>
+                    <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-emerald-200/30 dark:bg-emerald-700/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+                  </div>
+
+                  <div className="relative">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="flex-shrink-0 p-2.5 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-lg">
+                        <Sparkles className="h-5 w-5 text-white animate-pulse" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-lg text-green-900 dark:text-green-300 mb-1 flex items-center gap-2">
+                          Stablecoin Off-Ramp Available
+                          <Badge className="bg-green-600 hover:bg-green-600 text-white px-2 py-0.5 text-xs">New</Badge>
+                        </h4>
+                        <p className="text-sm text-green-800 dark:text-green-400 leading-relaxed">
+                          Send <span className="font-semibold">USDC/USDT</span> and receive local currency in <span className="font-semibold">9+ African countries</span> via Paycrest integration.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mb-3">
+                      <Coins className="h-4 w-4 text-green-600 dark:text-green-400" />
+                      <span className="text-xs font-semibold text-green-700 dark:text-green-400">Supported Currencies:</span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        { code: 'NGN', name: 'Nigeria', color: 'from-green-500 to-green-600' },
+                        { code: 'KES', name: 'Kenya', color: 'from-emerald-500 to-emerald-600' },
+                        { code: 'TZS', name: 'Tanzania', color: 'from-teal-500 to-teal-600' },
+                        { code: 'UGX', name: 'Uganda', color: 'from-cyan-500 to-cyan-600' },
+                        { code: 'GHS', name: 'Ghana', color: 'from-green-600 to-emerald-700' },
+                      ].map((currency, index) => (
+                        <div
+                          key={currency.code}
+                          className="group relative px-3 py-1.5 bg-white dark:bg-gray-900 border border-green-200 dark:border-green-800 rounded-lg hover:border-green-400 dark:hover:border-green-600 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 cursor-default"
+                          style={{ animationDelay: `${index * 100}ms` }}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <div className={`w-2 h-2 rounded-full bg-gradient-to-r ${currency.color} animate-pulse`}></div>
+                            <span className="text-xs font-semibold text-green-900 dark:text-green-300">{currency.code}</span>
+                          </div>
+                          <div className="absolute hidden group-hover:block bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded whitespace-nowrap z-10">
+                            {currency.name}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="px-3 py-1.5 bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 border border-green-300 dark:border-green-700 rounded-lg">
+                        <div className="flex items-center gap-1.5">
+                          <TrendingUp className="w-3 h-3 text-green-600 dark:text-green-400" />
+                          <span className="text-xs font-bold text-green-700 dark:text-green-400">+ 4 more</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
