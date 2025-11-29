@@ -272,7 +272,11 @@ export async function POST(request: NextRequest) {
     // Calculate fees
     const markupPercentage = senderProfile.markup_percentage || 0.005; // 0.5% default for crypto
     const senderMarkup = amount * markupPercentage;
-    const platformFee = 2.00; // $2.00 per off-ramp transaction
+    
+    // Platform revenue: Base fee + percentage (hybrid model)
+    const baseFee = 0.25; // $0.25 base per transaction
+    const platformFeePercentage = 0.0005; // 0.05% of transaction value
+    const platformFee = baseFee + (amount * platformFeePercentage);
 
     // Get token record
     const tokenRecord = await prisma.tokens.findFirst({
