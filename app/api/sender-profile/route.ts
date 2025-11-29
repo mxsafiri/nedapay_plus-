@@ -38,7 +38,47 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return NextResponse.json({ senderProfile });
+    // Calculate real-time stats from payment_orders
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Get transaction stats
+    const orderStats = await prisma.payment_orders.aggregate({
+      where: {
+        sender_profile_payment_orders: senderProfile.id,
+      },
+      _count: true,
+      _avg: {
+        amount: true
+      },
+      _sum: {
+        amount: true
+      }
+    });
+
+    // Get monthly volume
+    const monthlyStats = await prisma.payment_orders.aggregate({
+      where: {
+        sender_profile_payment_orders: senderProfile.id,
+        created_at: {
+          gte: startOfMonth
+        }
+      },
+      _sum: {
+        amount: true
+      }
+    });
+
+    // Add calculated fields to response
+    const enhancedProfile = {
+      ...senderProfile,
+      transaction_count: orderStats._count || 0,
+      avg_transaction_value: orderStats._avg.amount || 0,
+      avg_monthly_volume: monthlyStats._sum.amount || 0,
+      next_billing_date: null // TODO: Implement billing system
+    };
+
+    return NextResponse.json({ senderProfile: enhancedProfile });
   } catch (error) {
     console.error('Error fetching/creating sender profile:', error);
     return NextResponse.json(
@@ -62,6 +102,7 @@ export async function POST(request: NextRequest) {
       isActive, 
       isPartner, 
       providerId,
+      markupPercentage,  // Revenue settings
       // Onboarding fields
       bankName,
       country,
@@ -86,16 +127,23 @@ export async function POST(request: NextRequest) {
 
     if (existingProfile) {
       // Update existing profile
+      const updateData: any = {
+        webhook_url: webhookUrl,
+        domain_whitelist: domainWhitelist || [],
+        is_active: isActive ?? true,
+        is_partner: isPartner ?? false,
+        provider_id: providerId,
+        updated_at: new Date()
+      };
+
+      // Only update markup if provided
+      if (markupPercentage !== undefined) {
+        updateData.markup_percentage = markupPercentage;
+      }
+
       senderProfile = await prisma.sender_profiles.update({
         where: { user_sender_profile: finalUserId },
-        data: {
-          webhook_url: webhookUrl,
-          domain_whitelist: domainWhitelist || [],
-          is_active: isActive ?? true,
-          is_partner: isPartner ?? false,
-          provider_id: providerId,
-          updated_at: new Date()
-        }
+        data: updateData
       });
     } else {
       // Create new profile (onboarding)
