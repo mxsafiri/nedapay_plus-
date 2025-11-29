@@ -55,6 +55,19 @@ export async function GET(request: NextRequest) {
             is_active: true,
             is_partner: true
           }
+        },
+        kyb_profiles: {
+          select: {
+            id: true,
+            certificate_of_incorporation_url: true,
+            business_license_url: true,
+            shareholder_declaration_url: true,
+            aml_policy_url: true,
+            data_protection_policy_url: true,
+            kyb_rejection_comment: true,
+            created_at: true,
+            updated_at: true
+          }
         }
       },
       orderBy: {
