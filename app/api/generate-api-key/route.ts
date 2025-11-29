@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     console.log('✅ User authenticated:', user.id);
 
     const body = await request.json().catch(() => ({}));
-    const { isTest = true, regenerate = false } = body;
+    const { isTest = true, regenerate = false, keyName } = body;
     
     console.log('📝 Request body:', { isTest, regenerate });
 
@@ -148,7 +148,9 @@ export async function POST(request: NextRequest) {
           where: { id: existingKey.id },
           data: {
             secret: hashedKey,
-            is_test: isTest
+            is_test: isTest,
+            key_name: keyName || (isTest ? 'Test Key' : 'Live Key'),
+            created_at: new Date()
           }
         });
         
@@ -205,6 +207,11 @@ export async function POST(request: NextRequest) {
       id: crypto.randomUUID(),
       secret: hashedKey,
       is_test: isTest,
+      key_name: keyName || (isTest ? 'Test Key' : 'Live Key'),
+      is_active: true,
+      created_at: new Date(),
+      request_count: 0,
+      last_request_reset_at: new Date(),
       ...(hasSenderProfile && senderProfileId && { sender_profile_api_key: senderProfileId }),
       ...(hasProviderProfile && providerProfileId && { provider_profile_api_key: providerProfileId })
     };
@@ -296,10 +303,13 @@ export async function GET(request: NextRequest) {
       hasApiKey: !!apiKey,
       keyInfo: apiKey ? {
         id: apiKey.id,
-        created_at: new Date().toISOString(), // Placeholder
+        created_at: (apiKey as any).created_at?.toISOString() || new Date().toISOString(),
         is_test: apiKey.is_test,
-        key_name: apiKey.is_test ? 'Test Key' : 'Live Key', // We don't store key_name yet
-        secret: '***' // Never return the actual key
+        is_active: (apiKey as any).is_active ?? true,
+        key_name: (apiKey as any).key_name || (apiKey.is_test ? 'Test Key' : 'Live Key'),
+        last_used_at: (apiKey as any).last_used_at?.toISOString() || null,
+        request_count: (apiKey as any).request_count || 0,
+        api_key: '••••••••••••••••••••••••••••' // Masked for security
       } : null
     });
   } catch (error) {
