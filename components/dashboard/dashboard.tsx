@@ -125,9 +125,9 @@ export function Dashboard({ user, userRole }: DashboardProps) {
     fetchData();
   }, []);
 
-  // Fetch transactions when switching to transactions tab
+  // Fetch transactions on mount and when switching tabs
   useEffect(() => {
-    if (activeTab === 'transactions' && transactions.length === 0) {
+    if (transactions.length === 0) {
       fetchTransactions();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -409,33 +409,61 @@ export function Dashboard({ user, userRole }: DashboardProps) {
               </Card>
             )}
 
-            {/* Network Performance */}
-            {savingsData && savingsData.networkStats && savingsData.networkStats.length > 0 && (
+            {/* Recent Transactions */}
+            {transactions && transactions.length > 0 && (
               <Card className="border border-border/50 shadow-xl backdrop-blur-sm bg-background/95 rounded-2xl overflow-hidden">
                 <CardHeader className="pb-4 pt-6 px-6 bg-muted/20 border-b border-border/30">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl font-semibold">Network Performance</CardTitle>
-                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition-colors">
-                      See details <ArrowRight className="w-4 h-4 ml-1" />
+                    <CardTitle className="text-xl font-semibold">Recent Transactions</CardTitle>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setActiveTab('transactions')}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg transition-colors"
+                    >
+                      View all <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {savingsData.networkStats.map((stat: any, idx: number) => (
-                      <div key={idx} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/30">
+                  <div className="space-y-3">
+                    {transactions.slice(0, 5).map((tx: any) => (
+                      <div key={tx.id} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border/30 hover:bg-muted/40 transition-colors">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <Network className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            tx.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30' :
+                            tx.status === 'failed' ? 'bg-red-100 dark:bg-red-900/30' :
+                            'bg-yellow-100 dark:bg-yellow-900/30'
+                          }`}>
+                            <CircleCheck className={`w-5 h-5 ${
+                              tx.status === 'completed' ? 'text-green-600 dark:text-green-400' :
+                              tx.status === 'failed' ? 'text-red-600 dark:text-red-400' :
+                              'text-yellow-600 dark:text-yellow-400'
+                            }`} />
                           </div>
                           <div>
-                            <p className="font-semibold text-foreground capitalize">{stat.network.replace('-', ' ')}</p>
-                            <p className="text-sm text-muted-foreground">{stat.transactionCount} transactions</p>
+                            <p className="font-semibold text-foreground">${tx.amount?.toFixed(2) || '0.00'}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {tx.paycrest_order_id ? 'Paycrest Off-ramp' : 'Payment Order'} • 
+                              <span className={`ml-1 ${
+                                tx.status === 'completed' ? 'text-green-600' :
+                                tx.status === 'failed' ? 'text-red-600' :
+                                'text-yellow-600'
+                              }`}>
+                                {tx.status}
+                              </span>
+                            </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-foreground">${stat.averageFee.toFixed(4)}</p>
-                          <p className="text-xs text-muted-foreground">avg fee</p>
+                          <p className="text-sm text-muted-foreground">
+                            {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </p>
+                          {tx.tx_hash && (
+                            <p className="text-xs text-blue-600 dark:text-blue-400 font-mono">
+                              {tx.tx_hash.substring(0, 6)}...{tx.tx_hash.substring(tx.tx_hash.length - 4)}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
