@@ -4,6 +4,7 @@ import { getUserFromRequest } from '@/lib/auth/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
+import { sendAdminKYBNotification } from '@/lib/email';
 
 // POST - Upload KYB documents
 export async function POST(request: NextRequest) {
@@ -164,6 +165,30 @@ export async function POST(request: NextRequest) {
       // Continue anyway - don't fail the whole upload
     }
 
+    // Send admin notification emails
+    try {
+      const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email;
+      const userRole = user.scope || 'Unknown';
+      const adminPortalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://nedapay.xyz'}/admin`;
+      
+      console.log('📧 Sending admin KYB notification...');
+      const emailResult = await sendAdminKYBNotification(
+        user.email,
+        userName,
+        userRole,
+        adminPortalUrl
+      );
+      
+      if (emailResult.success) {
+        console.log('✅ Admin notification emails sent successfully');
+      } else {
+        console.error('⚠️ Failed to send admin notifications, but KYB submission was successful');
+      }
+    } catch (emailError) {
+      console.error('❌ Error sending admin notifications:', emailError);
+      // Don't fail the whole upload if email fails
+    }
+
     // If PSP and supported countries provided, update provider profile
     if (supportedCountriesStr) {
       const supportedCountries = JSON.parse(supportedCountriesStr);
@@ -187,7 +212,7 @@ export async function POST(request: NextRequest) {
         amlPolicy: !!documents.amlPolicy,
         dataProtectionPolicy: !!documents.dataProtectionPolicy
       },
-      message: 'Documents uploaded successfully. KYB verification pending.'
+      message: 'Documents uploaded successfully. KYB verification pending. Admin team has been notified.'
     });
   } catch (error) {
     console.error('❌ Error uploading KYB documents:', error);
