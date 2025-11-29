@@ -12,6 +12,7 @@ export default function Settings() {
   const [checkingProfile, setCheckingProfile] = useState(true);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
   const [profile, setProfile] = useState<any>(null);
+  const [kybStatus, setKybStatus] = useState<string>('not_started');
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -20,6 +21,9 @@ export default function Settings() {
       
       // Fetch API keys
       fetchApiKeys(currentUser.id);
+      
+      // Fetch KYB status
+      fetchKYBStatus(currentUser.id);
       
       // Check if provider has completed onboarding
       if (currentUser.scope?.toLowerCase() === 'provider' || currentUser.scope?.toLowerCase() === 'psp') {
@@ -50,6 +54,23 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Error fetching API keys:', error);
+    }
+  };
+
+  const fetchKYBStatus = async (userId: string) => {
+    try {
+      const response = await fetch('/api/kyb/status', {
+        headers: {
+          'Authorization': `Bearer ${userId}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setKybStatus(data.status || 'not_started');
+      }
+    } catch (error) {
+      console.error('Error fetching KYB status:', error);
     }
   };
 
@@ -127,7 +148,8 @@ export default function Settings() {
     <SettingsPage 
       user={settingsUser as any} 
       profile={profile} 
-      apiKeys={apiKeys} 
+      apiKeys={apiKeys}
+      kybStatus={kybStatus}
     />
   );
 }

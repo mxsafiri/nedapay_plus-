@@ -66,6 +66,32 @@ export async function POST(request: NextRequest) {
       hasProviderProfile: !!userData.provider_profiles
     });
 
+    // Check KYB verification status
+    if (userData.kyb_verification_status !== 'verified') {
+      console.warn('User not KYB verified:', { 
+        userId: user.id, 
+        status: userData.kyb_verification_status 
+      });
+      
+      const statusMessages = {
+        'not_started': 'Please submit your KYB documents for verification',
+        'pending': 'Your KYB documents are under review. You will be notified once approved.',
+        'rejected': 'Your KYB verification was rejected. Please contact support or resubmit documents.'
+      };
+      
+      return NextResponse.json(
+        { 
+          error: 'KYB Verification Required',
+          details: statusMessages[userData.kyb_verification_status as keyof typeof statusMessages] || 'Please complete KYB verification',
+          kyb_status: userData.kyb_verification_status,
+          actions: {
+            submitKYB: '/protected/settings'
+          }
+        }, 
+        { status: 403 }
+      );
+    }
+
     const hasSenderProfile = !!userData.sender_profiles;
     const hasProviderProfile = !!userData.provider_profiles;
 

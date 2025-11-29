@@ -34,16 +34,18 @@ import {
   Copy, 
   Trash2,
   Calendar,
-  Activity
+  Activity,
+  Shield
 } from "lucide-react";
 import { toast } from "sonner";
 
 interface ApiKeyManagerProps {
   user: User;
   apiKeys: ApiKey[];
+  kybStatus: string;
 }
 
-export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerProps) {
+export function ApiKeyManager({ user, apiKeys: initialApiKeys, kybStatus }: ApiKeyManagerProps) {
   const [apiKeys, setApiKeys] = useState(initialApiKeys);
   const [isCreating, setIsCreating] = useState(false);
   const [newKeyName, setNewKeyName] = useState("");
@@ -149,8 +151,58 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
     });
   };
 
+  const isVerified = kybStatus === 'verified';
+  const isPending = kybStatus === 'pending';
+
+  const getStatusBanner = () => {
+    if (isVerified) return null;
+
+    const statusConfig = {
+      'not_started': {
+        title: 'KYB Verification Required',
+        message: 'Please submit your KYB documents to create API keys.',
+        color: 'amber',
+        link: '/protected/settings'
+      },
+      'pending': {
+        title: 'KYB Verification Pending',
+        message: 'Your documents are under review. API key creation will be enabled once approved.',
+        color: 'blue',
+        link: null
+      },
+      'rejected': {
+        title: 'KYB Verification Rejected',
+        message: 'Please resubmit your documents or contact support.',
+        color: 'red',
+        link: '/protected/settings'
+      }
+    };
+
+    const config = statusConfig[kybStatus as keyof typeof statusConfig];
+    if (!config) return null;
+
+    return (
+      <div className={`mb-6 p-4 bg-${config.color}-50 dark:bg-${config.color}-950/20 border border-${config.color}-200 dark:border-${config.color}-800 rounded-xl`}>
+        <div className="flex items-start gap-3">
+          <Shield className={`h-5 w-5 text-${config.color}-600 mt-0.5 flex-shrink-0`} />
+          <div className="flex-1">
+            <h4 className={`font-semibold text-${config.color}-900 dark:text-${config.color}-100`}>{config.title}</h4>
+            <p className={`text-sm text-${config.color}-700 dark:text-${config.color}-300 mt-1`}>{config.message}</p>
+            {config.link && (
+              <a href={config.link} className={`text-sm font-medium text-${config.color}-600 hover:underline mt-2 inline-block`}>
+                {kybStatus === 'not_started' ? 'Submit Documents →' : 'Resubmit Documents →'}
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {getStatusBanner()}
+      
       <Card className="border-none shadow-sm bg-gradient-to-br from-background to-muted/20 rounded-2xl overflow-hidden">
         <CardHeader className="pb-6 pt-6 px-6 bg-muted/30 border-b border-border/50">
           <div className="flex items-center justify-between">
@@ -169,7 +221,11 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys }: ApiKeyManagerPr
             </div>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="h-11 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-md hover:shadow-lg transition-all">
+                <Button 
+                  disabled={!isVerified}
+                  className="h-11 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  title={!isVerified ? 'KYB verification required' : undefined}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Create API Key
                 </Button>

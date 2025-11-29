@@ -31,9 +31,10 @@ interface SettingsPageProps {
   user: User;
   profile: any | null;
   apiKeys: ApiKey[];
+  kybStatus: string;
 }
 
-export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
+export function SettingsPage({ user, profile, apiKeys, kybStatus }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState("profile");
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
@@ -181,7 +182,7 @@ export function SettingsPage({ user, profile, apiKeys }: SettingsPageProps) {
 
         {/* Shared Settings - Available to both senders and providers */}
         <TabsContent value="api-keys" className="space-y-8 mt-0">
-          <ApiKeyManager user={user} apiKeys={apiKeys} />
+          <ApiKeyManager user={user} apiKeys={apiKeys} kybStatus={kybStatus} />
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6 mt-0">
