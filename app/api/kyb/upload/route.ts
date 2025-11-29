@@ -47,7 +47,23 @@ export async function POST(request: NextRequest) {
       const fileName = `${docType}-${crypto.randomUUID()}.${fileExt}`;
       const filePath = `kyb/${user.id}/${fileName}`;
       
+      console.log(`📤 Uploading ${docType}:`, { fileName, filePath, size: file.size, type: file.type });
+      
       const fileBuffer = await file.arrayBuffer();
+      
+      // Check if bucket exists first
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+      if (bucketError) {
+        console.error('❌ Error listing buckets:', bucketError);
+        throw new Error(`Storage error: ${bucketError.message}. Please ensure Supabase Storage is configured.`);
+      }
+      
+      const bucketExists = buckets?.some(b => b.name === 'kyb-documents');
+      if (!bucketExists) {
+        console.error('❌ Bucket "kyb-documents" does not exist');
+        throw new Error('Storage bucket "kyb-documents" not found. Please create it in Supabase Dashboard (see SUPABASE_STORAGE_SETUP.md)');
+      }
+      
       const { data, error } = await supabase.storage
         .from('kyb-documents')
         .upload(filePath, fileBuffer, {
@@ -65,7 +81,7 @@ export async function POST(request: NextRequest) {
         .from('kyb-documents')
         .getPublicUrl(filePath);
 
-      console.log(`✅ ${docType} uploaded:`, fileName);
+      console.log(`✅ ${docType} uploaded:`, fileName, 'URL:', publicUrl);
       return publicUrl;
     };
 
