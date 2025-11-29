@@ -29,9 +29,21 @@ export async function GET(request: NextRequest) {
         select: { id: true }
       });
 
+      // If no provider profile exists, return empty array
+      if (!providerProfile?.id) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            role: 'provider',
+            transactions: []
+          }
+        });
+      }
+
       const orders = await prisma.payment_orders.findMany({
         where: {
-          assigned_psp_id: providerProfile?.id || ''
+          assigned_psp_id: providerProfile.id,
+          // IMPORTANT: Only show orders assigned to this provider
         },
         include: {
           tokens: {
@@ -77,9 +89,22 @@ export async function GET(request: NextRequest) {
         select: { id: true }
       });
 
+      // If no sender profile exists, return empty array
+      if (!senderProfile?.id) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            role: 'sender',
+            transactions: []
+          }
+        });
+      }
+
       const orders = await prisma.payment_orders.findMany({
         where: {
-          sender_profile_payment_orders: senderProfile?.id || ''
+          sender_profile_payment_orders: senderProfile.id,
+          // IMPORTANT: Only show orders that belong to this sender
+          // Exclude test data or orphaned transactions
         },
         include: {
           tokens: {
