@@ -6,13 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   ArrowUpRight,
   Zap,
   Coins,
@@ -20,7 +13,6 @@ import {
   Clock,
   BarChart3,
   TrendingDown,
-  Network,
   CircleCheck,
   ArrowRight,
   Plus
@@ -37,8 +29,6 @@ interface DashboardProps {
 export function Dashboard({ user, userRole }: DashboardProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const userName = user?.email?.split('@')[0] || 'User';
-  const [networkStatus, setNetworkStatus] = useState<any>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<string>("all");
   const [savingsData, setSavingsData] = useState<any>(null);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -100,13 +90,6 @@ export function Dashboard({ user, userRole }: DashboardProps) {
           const statsData = await statsRes.json();
           setDashboardStats(statsData.data);
           console.log('✅ Dashboard stats loaded:', statsData.data);
-        }
-
-        // Fetch network status
-        const statusRes = await fetch('/api/networks/status');
-        if (statusRes.ok) {
-          const statusData = await statusRes.json();
-          setNetworkStatus(statusData.data);
         }
 
         // Fetch savings data
@@ -232,14 +215,6 @@ export function Dashboard({ user, userRole }: DashboardProps) {
         icon: TrendingDown,
         color: "bg-green-50 dark:bg-green-950/20",
         iconColor: "text-green-600 dark:text-green-400"
-      },
-      {
-        title: "Networks Active",
-        value: networkStatus?.count?.toString() || "0",
-        subtitle: "Multi-chain ready",
-        icon: Network,
-        color: "bg-blue-50 dark:bg-blue-950/20",
-        iconColor: "text-blue-600 dark:text-blue-400"
       }
     ];
   };
@@ -302,38 +277,6 @@ export function Dashboard({ user, userRole }: DashboardProps) {
             {/* Demo Trigger Button - Only for Demo Accounts */}
             {(userRole === 'sender' || userRole === 'bank') && user?.email?.includes('demo@') && (
               <DemoTriggerButton />
-            )}
-            
-            {/* Network Selector Dropdown */}
-            {networkStatus && (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Network className="w-5 h-5 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">Network:</span>
-                </div>
-                <Select value={selectedNetwork} onValueChange={setSelectedNetwork}>
-                  <SelectTrigger className="w-[220px]">
-                    <SelectValue placeholder="Select network" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">
-                      <div className="flex items-center gap-2">
-                        <CircleCheck className="w-4 h-4 text-green-500" />
-                        <span>All Networks</span>
-                      </div>
-                    </SelectItem>
-                    {networkStatus.networks?.map((network: any, idx: number) => (
-                      <SelectItem key={idx} value={network.network}>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${network.available ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                          <span className="capitalize">{network.network.replace('-', ' ')}</span>
-                          <span className="text-xs text-muted-foreground ml-auto">({network.type})</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             )}
 
             {/* Stats Section */}
