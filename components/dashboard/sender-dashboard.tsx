@@ -1,3 +1,6 @@
+'use client';
+
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DemoTriggerButton } from "@/components/demo/demo-trigger-button";
@@ -17,35 +20,67 @@ interface SenderDashboardProps {
   user?: any; // Pass user from parent to check if demo account
 }
 
+interface DashboardStats {
+  totalVolume: { formatted: string; change: string; changeType: string };
+  transactions: { formatted: string; last30Days: number; change: string; changeType: string };
+  activeRoutes: { formatted: string; paycrestOrders: number; change: string; changeType: string };
+  successRate: { formatted: string; completed: number; total: number; change: string; changeType: string };
+}
+
 export function SenderDashboard({ user }: SenderDashboardProps = {}) {
+  const [statsData, setStatsData] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const response = await fetch('/api/v1/sender/stats');
+        const result = await response.json();
+        if (result.success) {
+          setStatsData(result.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
   const stats = [
     {
       title: "Total Volume",
-      value: "$0.00",
-      change: "+0%",
-      changeType: "positive" as const,
+      value: loading ? "Loading..." : (statsData?.totalVolume.formatted || "$0.00"),
+      change: statsData?.totalVolume.change || "+0%",
+      changeType: statsData?.totalVolume.changeType || "positive",
       icon: DollarSign,
     },
     {
       title: "Transactions",
-      value: "0",
-      change: "+0",
-      changeType: "positive" as const,
+      value: loading ? "..." : (statsData?.transactions.formatted || "0"),
+      change: statsData?.transactions.change || "+0",
+      changeType: statsData?.transactions.changeType || "positive",
       icon: TrendingUp,
+      subtitle: statsData ? `${statsData.transactions.last30Days} in last 30 days` : undefined,
     },
     {
-      title: "Active Routes",
-      value: "0",
-      change: "+0",
-      changeType: "positive" as const,
+      title: "Active Networks",
+      value: loading ? "..." : (statsData?.activeRoutes.formatted || "0"),
+      change: statsData?.activeRoutes.change || "+0",
+      changeType: statsData?.activeRoutes.changeType || "positive",
       icon: Globe,
+      subtitle: statsData && statsData.activeRoutes.paycrestOrders > 0 
+        ? `${statsData.activeRoutes.paycrestOrders} Paycrest orders` 
+        : undefined,
     },
     {
       title: "Success Rate",
-      value: "0%",
-      change: "+0%",
-      changeType: "positive" as const,
+      value: loading ? "..." : (statsData?.successRate.formatted || "0%"),
+      change: statsData?.successRate.change || "+0%",
+      changeType: statsData?.successRate.changeType || "positive",
       icon: Users,
+      subtitle: statsData ? `${statsData.successRate.completed} / ${statsData.successRate.total} completed` : undefined,
     },
   ];
 
@@ -68,20 +103,26 @@ export function SenderDashboard({ user }: SenderDashboardProps = {}) {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                <span
-                  className={
-                    stat.changeType === "positive"
-                      ? "text-green-600"
-                      : stat.changeType === "negative"
-                      ? "text-red-600"
-                      : "text-muted-foreground"
-                  }
-                >
-                  {stat.change}
-                </span>{" "}
-                from last month
-              </p>
+              {stat.subtitle ? (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stat.subtitle}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  <span
+                    className={
+                      stat.changeType === "positive"
+                        ? "text-green-600"
+                        : stat.changeType === "negative"
+                        ? "text-red-600"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {stat.change}
+                  </span>{" "}
+                  from last month
+                </p>
+              )}
             </CardContent>
           </Card>
         ))}
