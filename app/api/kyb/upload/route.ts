@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromRequest } from '@/lib/auth/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
 import crypto from 'crypto';
 import { sendAdminKYBNotification } from '@/lib/email';
+import { createClient } from '@supabase/supabase-js';
 
 // POST - Upload KYB documents
 export async function POST(request: NextRequest) {
@@ -32,76 +31,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'kyb', user.id);
-    await mkdir(uploadsDir, { recursive: true });
-    console.log('📁 Upload directory created:', uploadsDir);
+    // Initialize Supabase client with service role for file uploads
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+
+    console.log('📁 Uploading documents to Supabase Storage...');
 
     const documents: Record<string, string> = {};
 
-    // Save incorporation certificate
-    if (incorporation) {
-      const incorporationExt = path.extname(incorporation.name);
-      const incorporationFilename = `incorporation-${crypto.randomUUID()}${incorporationExt}`;
-      const incorporationPath = path.join(uploadsDir, incorporationFilename);
+    // Helper function to upload file to Supabase Storage
+    const uploadFile = async (file: File, docType: string) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${docType}-${crypto.randomUUID()}.${fileExt}`;
+      const filePath = `kyb/${user.id}/${fileName}`;
       
-      const incorporationBuffer = Buffer.from(await incorporation.arrayBuffer());
-      await writeFile(incorporationPath, incorporationBuffer);
-      
-      documents.incorporation = incorporationPath;
-      console.log('✅ Incorporation certificate saved:', incorporationFilename);
-    }
+      const fileBuffer = await file.arrayBuffer();
+      const { data, error } = await supabase.storage
+        .from('kyb-documents')
+        .upload(filePath, fileBuffer, {
+          contentType: file.type,
+          upsert: false
+        });
 
-    // Save business license
-    if (license) {
-      const licenseExt = path.extname(license.name);
-      const licenseFilename = `license-${crypto.randomUUID()}${licenseExt}`;
-      const licensePath = path.join(uploadsDir, licenseFilename);
-      
-      const licenseBuffer = Buffer.from(await license.arrayBuffer());
-      await writeFile(licensePath, licenseBuffer);
-      
-      documents.license = licensePath;
-      console.log('✅ Business license saved:', licenseFilename);
-    }
+      if (error) {
+        console.error(`❌ Error uploading ${docType}:`, error);
+        throw new Error(`Failed to upload ${docType}: ${error.message}`);
+      }
 
-    // Save shareholder declaration
-    if (shareholderDeclaration) {
-      const shareholderExt = path.extname(shareholderDeclaration.name);
-      const shareholderFilename = `shareholder-declaration-${crypto.randomUUID()}${shareholderExt}`;
-      const shareholderPath = path.join(uploadsDir, shareholderFilename);
-      
-      const shareholderBuffer = Buffer.from(await shareholderDeclaration.arrayBuffer());
-      await writeFile(shareholderPath, shareholderBuffer);
-      
-      documents.shareholderDeclaration = shareholderPath;
-      console.log('✅ Shareholder declaration saved:', shareholderFilename);
-    }
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('kyb-documents')
+        .getPublicUrl(filePath);
 
-    // Save AML policy
-    if (amlPolicy) {
-      const amlExt = path.extname(amlPolicy.name);
-      const amlFilename = `aml-policy-${crypto.randomUUID()}${amlExt}`;
-      const amlPath = path.join(uploadsDir, amlFilename);
-      
-      const amlBuffer = Buffer.from(await amlPolicy.arrayBuffer());
-      await writeFile(amlPath, amlBuffer);
-      
-      documents.amlPolicy = amlPath;
-      console.log('✅ AML policy saved:', amlFilename);
-    }
+      console.log(`✅ ${docType} uploaded:`, fileName);
+      return publicUrl;
+    };
 
-    // Save data protection policy
-    if (dataProtectionPolicy) {
-      const dataProtectionExt = path.extname(dataProtectionPolicy.name);
-      const dataProtectionFilename = `data-protection-policy-${crypto.randomUUID()}${dataProtectionExt}`;
-      const dataProtectionPath = path.join(uploadsDir, dataProtectionFilename);
-      
-      const dataProtectionBuffer = Buffer.from(await dataProtectionPolicy.arrayBuffer());
-      await writeFile(dataProtectionPath, dataProtectionBuffer);
-      
-      documents.dataProtectionPolicy = dataProtectionPath;
-      console.log('✅ Data protection policy saved:', dataProtectionFilename);
+    // Upload all documents
+    try {
+      documents.incorporation = await uploadFile(incorporation, 'incorporation');
+      documents.license = await uploadFile(license, 'license');
+      documents.shareholderDeclaration = await uploadFile(shareholderDeclaration, 'shareholder-declaration');
+      documents.amlPolicy = await uploadFile(amlPolicy, 'aml-policy');
+      documents.dataProtectionPolicy = await uploadFile(dataProtectionPolicy, 'data-protection-policy');
+    } catch (uploadError) {
+      console.error('❌ File upload error:', uploadError);
+      throw uploadError;
     }
 
     // Check if KYB profile exists
