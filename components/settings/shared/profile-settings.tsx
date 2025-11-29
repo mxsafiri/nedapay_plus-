@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { FileUploadBox } from "./file-upload-box";
 
 interface ProfileSettingsProps {
   user: User;
@@ -259,19 +260,30 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
   };
 
   const handleKYBSubmit = async () => {
-    if (!kybFiles.incorporation || !kybFiles.license || !kybFiles.shareholderDeclaration || !kybFiles.amlPolicy || !kybFiles.dataProtectionPolicy) {
-      toast.error("Please upload all 5 required documents");
+    // Check each document individually for better error messages
+    const missingDocs = [];
+    if (!kybFiles.incorporation) missingDocs.push('Certificate of Incorporation');
+    if (!kybFiles.license) missingDocs.push('Business License');
+    if (!kybFiles.shareholderDeclaration) missingDocs.push('Shareholder Declaration');
+    if (!kybFiles.amlPolicy) missingDocs.push('AML Policy');
+    if (!kybFiles.dataProtectionPolicy) missingDocs.push('Data Protection Policy');
+    
+    if (missingDocs.length > 0) {
+      toast.error(`Missing documents: ${missingDocs.join(', ')}`);
       return;
     }
 
     setIsUpdating(true);
     try {
       const formData = new FormData();
-      formData.append('incorporation', kybFiles.incorporation);
-      formData.append('license', kybFiles.license);
-      formData.append('shareholderDeclaration', kybFiles.shareholderDeclaration);
-      formData.append('amlPolicy', kybFiles.amlPolicy);
-      formData.append('dataProtectionPolicy', kybFiles.dataProtectionPolicy);
+      // Non-null assertions are safe here because we validated above
+      formData.append('incorporation', kybFiles.incorporation!);
+      formData.append('license', kybFiles.license!);
+      formData.append('shareholderDeclaration', kybFiles.shareholderDeclaration!);
+      formData.append('amlPolicy', kybFiles.amlPolicy!);
+      formData.append('dataProtectionPolicy', kybFiles.dataProtectionPolicy!);
+
+      console.log('📤 Submitting KYB documents...');
 
       const response = await fetch('/api/kyb/upload', {
         method: 'POST',
@@ -281,9 +293,12 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
         body: formData,
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to upload documents');
+        console.error('❌ Upload error:', error);
+        throw new Error(error.error || error.details || 'Failed to upload documents');
       }
 
       const _result = await response.json();
@@ -510,128 +525,40 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="incorporation" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Certificate of Incorporation *
-                    </Label>
-                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        id="incorporation"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 'incorporation')}
-                      />
-                      <label htmlFor="incorporation" className="cursor-pointer">
-                        <div className="text-muted-foreground">
-                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <p className="text-sm font-medium">Click to upload</p>
-                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
+                  <FileUploadBox
+                    id="incorporation"
+                    label="Certificate of Incorporation"
+                    file={kybFiles.incorporation}
+                    onFileChange={(e) => handleFileUpload(e, 'incorporation')}
+                  />
 
-                  <div className="space-y-2">
-                    <Label htmlFor="license" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Business License *
-                    </Label>
-                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        id="license"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 'license')}
-                      />
-                      <label htmlFor="license" className="cursor-pointer">
-                        <div className="text-muted-foreground">
-                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <p className="text-sm font-medium">Click to upload</p>
-                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
+                  <FileUploadBox
+                    id="license"
+                    label="Business License"
+                    file={kybFiles.license}
+                    onFileChange={(e) => handleFileUpload(e, 'license')}
+                  />
 
-                  {/* Shareholder Declaration */}
-                  <div className="space-y-2">
-                    <Label htmlFor="shareholderDeclaration" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Shareholder Declaration *
-                    </Label>
-                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        id="shareholderDeclaration"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 'shareholderDeclaration')}
-                      />
-                      <label htmlFor="shareholderDeclaration" className="cursor-pointer">
-                        <div className="text-muted-foreground">
-                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <p className="text-sm font-medium">Click to upload</p>
-                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
+                  <FileUploadBox
+                    id="shareholderDeclaration"
+                    label="Shareholder Declaration"
+                    file={kybFiles.shareholderDeclaration}
+                    onFileChange={(e) => handleFileUpload(e, 'shareholderDeclaration')}
+                  />
 
-                  {/* AML Policy */}
-                  <div className="space-y-2">
-                    <Label htmlFor="amlPolicy" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      AML Policy *
-                    </Label>
-                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        id="amlPolicy"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 'amlPolicy')}
-                      />
-                      <label htmlFor="amlPolicy" className="cursor-pointer">
-                        <div className="text-muted-foreground">
-                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <p className="text-sm font-medium">Click to upload</p>
-                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
+                  <FileUploadBox
+                    id="amlPolicy"
+                    label="AML Policy"
+                    file={kybFiles.amlPolicy}
+                    onFileChange={(e) => handleFileUpload(e, 'amlPolicy')}
+                  />
 
-                  {/* Data Protection Policy */}
-                  <div className="space-y-2">
-                    <Label htmlFor="dataProtectionPolicy" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Data Protection Policy *
-                    </Label>
-                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        id="dataProtectionPolicy"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        className="hidden"
-                        onChange={(e) => handleFileUpload(e, 'dataProtectionPolicy')}
-                      />
-                      <label htmlFor="dataProtectionPolicy" className="cursor-pointer">
-                        <div className="text-muted-foreground">
-                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
-                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          <p className="text-sm font-medium">Click to upload</p>
-                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
+                  <FileUploadBox
+                    id="dataProtectionPolicy"
+                    label="Data Protection Policy"
+                    file={kybFiles.dataProtectionPolicy}
+                    onFileChange={(e) => handleFileUpload(e, 'dataProtectionPolicy')}
+                  />
                 </div>
 
                 <div className="flex justify-end pt-2">
