@@ -15,7 +15,10 @@ import {
   BookOpen,
   ArrowRight,
   ExternalLink,
-  Sparkles
+  Sparkles,
+  Globe,
+  Network,
+  Layers
 } from "lucide-react";
 import { ApiPlayground } from "@/components/docs/api-playground";
 
@@ -153,32 +156,72 @@ export default function DocsV2Page() {
 
           {/* Main Content */}
           <div className="lg:col-span-9 space-y-8">
-            {/* Stablecoin Feature Banner */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-teal-950/20 border border-green-200 dark:border-green-800 rounded-xl p-6 shadow-sm">
+            {/* Omni-Channel Infrastructure Banner */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-950/20 dark:via-indigo-950/20 dark:to-purple-950/20 border border-blue-200 dark:border-blue-800 rounded-xl p-8 shadow-lg">
+              {/* Animated background elements */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-green-200/30 dark:bg-green-700/20 rounded-full blur-2xl animate-pulse"></div>
-                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-emerald-200/30 dark:bg-emerald-700/20 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+                <div className="absolute -top-8 -right-8 w-32 h-32 bg-blue-300/20 dark:bg-blue-600/10 rounded-full blur-3xl animate-pulse"></div>
+                <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-indigo-300/20 dark:bg-indigo-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-purple-300/20 dark:bg-purple-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
               </div>
 
-              <div className="relative flex items-center gap-4">
-                <div className="flex-shrink-0 p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg shadow-lg">
-                  <Sparkles className="h-6 w-6 text-white animate-pulse" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-lg text-green-900 dark:text-green-300">
-                      Stablecoin Off-Ramp Available
-                    </h3>
-                    <Badge className="bg-green-600 hover:bg-green-600 text-white">New</Badge>
+              <div className="relative">
+                <div className="flex items-start gap-4 mb-6">
+                  {/* Icon Grid */}
+                  <div className="flex-shrink-0 relative">
+                    <div className="p-3.5 bg-gradient-to-br from-blue-500 via-indigo-600 to-purple-600 rounded-xl shadow-xl">
+                      <Layers className="h-7 w-7 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></div>
                   </div>
-                  <p className="text-sm text-green-800 dark:text-green-400">
-                    Send USDC/USDT and receive local currency in 9+ African countries via Paycrest integration
-                  </p>
+
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 dark:from-blue-300 dark:via-indigo-300 dark:to-purple-300 bg-clip-text text-transparent">
+                        Omni-Channel Payment Infrastructure
+                      </h3>
+                    </div>
+                    <p className="text-base text-blue-900 dark:text-blue-200 font-medium mb-4">
+                      Pay anywhere, settle everywhere
+                    </p>
+                    <p className="text-sm text-blue-800/80 dark:text-blue-300/80 leading-relaxed max-w-2xl">
+                      Connect banks, PSPs, and payment networks through a single API. Support crypto, fiat, and mobile money across 9+ countries with real-time settlement and compliance built-in.
+                    </p>
+                  </div>
                 </div>
-                <Button variant="outline" className="border-green-600 text-green-700 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30">
-                  Learn More
-                  <ExternalLink className="h-4 w-4 ml-2" />
-                </Button>
+
+                {/* Feature Grid */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="group flex items-center gap-2 p-3 bg-white/60 dark:bg-gray-900/30 backdrop-blur-sm rounded-lg border border-blue-200/50 dark:border-blue-800/50 hover:border-blue-400 dark:hover:border-blue-600 transition-all duration-300 hover:shadow-md">
+                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-md group-hover:scale-110 transition-transform">
+                      <Globe className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-blue-900 dark:text-blue-300">Global Reach</div>
+                      <div className="text-[10px] text-blue-700/70 dark:text-blue-400/70">9+ Countries</div>
+                    </div>
+                  </div>
+
+                  <div className="group flex items-center gap-2 p-3 bg-white/60 dark:bg-gray-900/30 backdrop-blur-sm rounded-lg border border-indigo-200/50 dark:border-indigo-800/50 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all duration-300 hover:shadow-md">
+                    <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-md group-hover:scale-110 transition-transform">
+                      <Network className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-indigo-900 dark:text-indigo-300">Multi-Channel</div>
+                      <div className="text-[10px] text-indigo-700/70 dark:text-indigo-400/70">Crypto, Fiat, Mobile</div>
+                    </div>
+                  </div>
+
+                  <div className="group flex items-center gap-2 p-3 bg-white/60 dark:bg-gray-900/30 backdrop-blur-sm rounded-lg border border-purple-200/50 dark:border-purple-800/50 hover:border-purple-400 dark:hover:border-purple-600 transition-all duration-300 hover:shadow-md">
+                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/50 rounded-md group-hover:scale-110 transition-transform">
+                      <Zap className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-purple-900 dark:text-purple-300">Instant Settlement</div>
+                      <div className="text-[10px] text-purple-700/70 dark:text-purple-400/70">Real-time</div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
