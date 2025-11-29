@@ -146,6 +146,8 @@ model kyb_profiles {
   proof_of_business_address_url    String              @db.VarChar
   aml_policy_url                   String?             @db.VarChar
   kyc_policy_url                   String?             @db.VarChar
+  shareholder_declaration_url      String?             @db.VarChar
+  data_protection_policy_url       String?             @db.VarChar
   kyb_rejection_comment            String?             @db.VarChar
   user_kyb_profile                 String?             @unique @db.Uuid
   beneficial_owners                beneficial_owners[]

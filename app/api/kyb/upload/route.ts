@@ -19,11 +19,14 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const incorporation = formData.get('incorporation') as File | null;
     const license = formData.get('license') as File | null;
+    const shareholderDeclaration = formData.get('shareholderDeclaration') as File | null;
+    const amlPolicy = formData.get('amlPolicy') as File | null;
+    const dataProtectionPolicy = formData.get('dataProtectionPolicy') as File | null;
     const supportedCountriesStr = formData.get('supportedCountries') as string | null;
 
-    if (!incorporation && !license) {
+    if (!incorporation || !license || !shareholderDeclaration || !amlPolicy || !dataProtectionPolicy) {
       return NextResponse.json(
-        { error: 'At least one document is required' },
+        { error: 'All 5 documents are required: Certificate of Incorporation, Business License, Shareholder Declaration, AML Policy, and Data Protection Policy' },
         { status: 400 }
       );
     }
@@ -61,6 +64,45 @@ export async function POST(request: NextRequest) {
       console.log('✅ Business license saved:', licenseFilename);
     }
 
+    // Save shareholder declaration
+    if (shareholderDeclaration) {
+      const shareholderExt = path.extname(shareholderDeclaration.name);
+      const shareholderFilename = `shareholder-declaration-${crypto.randomUUID()}${shareholderExt}`;
+      const shareholderPath = path.join(uploadsDir, shareholderFilename);
+      
+      const shareholderBuffer = Buffer.from(await shareholderDeclaration.arrayBuffer());
+      await writeFile(shareholderPath, shareholderBuffer);
+      
+      documents.shareholderDeclaration = shareholderPath;
+      console.log('✅ Shareholder declaration saved:', shareholderFilename);
+    }
+
+    // Save AML policy
+    if (amlPolicy) {
+      const amlExt = path.extname(amlPolicy.name);
+      const amlFilename = `aml-policy-${crypto.randomUUID()}${amlExt}`;
+      const amlPath = path.join(uploadsDir, amlFilename);
+      
+      const amlBuffer = Buffer.from(await amlPolicy.arrayBuffer());
+      await writeFile(amlPath, amlBuffer);
+      
+      documents.amlPolicy = amlPath;
+      console.log('✅ AML policy saved:', amlFilename);
+    }
+
+    // Save data protection policy
+    if (dataProtectionPolicy) {
+      const dataProtectionExt = path.extname(dataProtectionPolicy.name);
+      const dataProtectionFilename = `data-protection-policy-${crypto.randomUUID()}${dataProtectionExt}`;
+      const dataProtectionPath = path.join(uploadsDir, dataProtectionFilename);
+      
+      const dataProtectionBuffer = Buffer.from(await dataProtectionPolicy.arrayBuffer());
+      await writeFile(dataProtectionPath, dataProtectionBuffer);
+      
+      documents.dataProtectionPolicy = dataProtectionPath;
+      console.log('✅ Data protection policy saved:', dataProtectionFilename);
+    }
+
     // Check if KYB profile exists
     const existingKYB = await prisma.kyb_profiles.findUnique({
       where: { user_kyb_profile: user.id }
@@ -76,6 +118,9 @@ export async function POST(request: NextRequest) {
         data: {
           certificate_of_incorporation_url: documents.incorporation || existingKYB.certificate_of_incorporation_url,
           business_license_url: documents.license || existingKYB.business_license_url,
+          shareholder_declaration_url: documents.shareholderDeclaration || (existingKYB as any).shareholder_declaration_url,
+          aml_policy_url: documents.amlPolicy || (existingKYB as any).aml_policy_url,
+          data_protection_policy_url: documents.dataProtectionPolicy || (existingKYB as any).data_protection_policy_url,
           updated_at: new Date()
         }
       });
@@ -94,6 +139,9 @@ export async function POST(request: NextRequest) {
           articles_of_incorporation_url: documents.incorporation || '',  // Same as cert for now
           business_license_url: documents.license || null,
           proof_of_business_address_url: '',  // Will be updated later
+          shareholder_declaration_url: documents.shareholderDeclaration || null,
+          aml_policy_url: documents.amlPolicy || null,
+          data_protection_policy_url: documents.dataProtectionPolicy || null,
           created_at: new Date(),
           updated_at: new Date()
         }
@@ -134,7 +182,10 @@ export async function POST(request: NextRequest) {
       kybProfile,
       documents: {
         incorporation: !!documents.incorporation,
-        license: !!documents.license
+        license: !!documents.license,
+        shareholderDeclaration: !!documents.shareholderDeclaration,
+        amlPolicy: !!documents.amlPolicy,
+        dataProtectionPolicy: !!documents.dataProtectionPolicy
       },
       message: 'Documents uploaded successfully. KYB verification pending.'
     });

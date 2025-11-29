@@ -43,9 +43,15 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
   const [kybFiles, setKybFiles] = useState<{
     incorporation: File | null;
     license: File | null;
+    shareholderDeclaration: File | null;
+    amlPolicy: File | null;
+    dataProtectionPolicy: File | null;
   }>({
     incorporation: null,
     license: null,
+    shareholderDeclaration: null,
+    amlPolicy: null,
+    dataProtectionPolicy: null,
   });
 
   const _supabase = createClient();
@@ -224,7 +230,7 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'incorporation' | 'license') => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'incorporation' | 'license' | 'shareholderDeclaration' | 'amlPolicy' | 'dataProtectionPolicy') => {
     const file = e.target.files?.[0];
     if (file) {
       // Validate file size (10MB max)
@@ -241,13 +247,20 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
       }
 
       setKybFiles(prev => ({ ...prev, [type]: file }));
-      toast.success(`${type === 'incorporation' ? 'Certificate' : 'License'} selected: ${file.name}`);
+      const docName = {
+        incorporation: 'Certificate of Incorporation',
+        license: 'Business License',
+        shareholderDeclaration: 'Shareholder Declaration',
+        amlPolicy: 'AML Policy',
+        dataProtectionPolicy: 'Data Protection Policy'
+      }[type];
+      toast.success(`${docName} selected: ${file.name}`);
     }
   };
 
   const handleKYBSubmit = async () => {
-    if (!kybFiles.incorporation || !kybFiles.license) {
-      toast.error("Please upload both required documents");
+    if (!kybFiles.incorporation || !kybFiles.license || !kybFiles.shareholderDeclaration || !kybFiles.amlPolicy || !kybFiles.dataProtectionPolicy) {
+      toast.error("Please upload all 5 required documents");
       return;
     }
 
@@ -256,6 +269,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
       const formData = new FormData();
       formData.append('incorporation', kybFiles.incorporation);
       formData.append('license', kybFiles.license);
+      formData.append('shareholderDeclaration', kybFiles.shareholderDeclaration);
+      formData.append('amlPolicy', kybFiles.amlPolicy);
+      formData.append('dataProtectionPolicy', kybFiles.dataProtectionPolicy);
 
       const response = await fetch('/api/kyb/upload', {
         method: 'POST',
@@ -484,7 +500,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                   <ul className="text-sm text-muted-foreground space-y-2 mb-4">
                     <li>• Certificate of Incorporation</li>
                     <li>• Business License</li>
-                    <li>• Proof of Business Address (optional)</li>
+                    <li>• Shareholder Declaration</li>
+                    <li>• Anti-Money Laundering (AML) Policy</li>
+                    <li>• Data Protection Policy</li>
                   </ul>
                   <p className="text-xs text-muted-foreground">
                     Accepted formats: PDF, JPG, PNG • Max size: 10MB per file
@@ -529,6 +547,81 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                         onChange={(e) => handleFileUpload(e, 'license')}
                       />
                       <label htmlFor="license" className="cursor-pointer">
+                        <div className="text-muted-foreground">
+                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="text-sm font-medium">Click to upload</p>
+                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Shareholder Declaration */}
+                  <div className="space-y-2">
+                    <Label htmlFor="shareholderDeclaration" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Shareholder Declaration *
+                    </Label>
+                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        id="shareholderDeclaration"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'shareholderDeclaration')}
+                      />
+                      <label htmlFor="shareholderDeclaration" className="cursor-pointer">
+                        <div className="text-muted-foreground">
+                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="text-sm font-medium">Click to upload</p>
+                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* AML Policy */}
+                  <div className="space-y-2">
+                    <Label htmlFor="amlPolicy" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      AML Policy *
+                    </Label>
+                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        id="amlPolicy"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'amlPolicy')}
+                      />
+                      <label htmlFor="amlPolicy" className="cursor-pointer">
+                        <div className="text-muted-foreground">
+                          <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <p className="text-sm font-medium">Click to upload</p>
+                          <p className="text-xs mt-1">PDF, JPG, PNG up to 10MB</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Data Protection Policy */}
+                  <div className="space-y-2">
+                    <Label htmlFor="dataProtectionPolicy" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Data Protection Policy *
+                    </Label>
+                    <div className="border-2 border-dashed border-border/50 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer">
+                      <input
+                        type="file"
+                        id="dataProtectionPolicy"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={(e) => handleFileUpload(e, 'dataProtectionPolicy')}
+                      />
+                      <label htmlFor="dataProtectionPolicy" className="cursor-pointer">
                         <div className="text-muted-foreground">
                           <svg className="mx-auto h-12 w-12 mb-2" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true">
                             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
