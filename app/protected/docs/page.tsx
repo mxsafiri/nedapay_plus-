@@ -194,15 +194,30 @@ export default function DocsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+                  <h4 className="font-semibold text-green-900 dark:text-green-300 mb-2">✨ Stablecoin Off-Ramp Available</h4>
+                  <p className="text-sm text-green-800 dark:text-green-400 mb-2">
+                    Send USDC/USDT and receive local currency in 9+ African countries via Paycrest integration.
+                  </p>
+                  <div className="text-xs text-green-700 dark:text-green-500 flex flex-wrap gap-2">
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇳🇬 NGN</span>
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇰🇪 KES</span>
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇹🇿 TZS</span>
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇺🇬 UGX</span>
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">🇬🇭 GHS</span>
+                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded">+ 4 more</span>
+                  </div>
+                </div>
+
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Create Payment Order</h3>
+                  <h3 className="text-lg font-semibold mb-3">Create Stablecoin Off-Ramp Order</h3>
                   <div className="mb-4">
                     <Badge variant="outline" className="font-mono">POST</Badge>
                     <code className="ml-2 text-sm">/api/v1/payment-orders</code>
                   </div>
                   
                   <p className="text-muted-foreground mb-4">
-                    Create a new cross-border payment order (e.g., TZS → CNY)
+                    Send USDC from Base blockchain and automatically convert to local fiat currency
                   </p>
 
                   <div className="space-y-4">
@@ -211,17 +226,18 @@ export default function DocsPage() {
                       <div className="relative">
                         <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
                           <code>{`{
-  "fromCurrency": "TZS",
-  "toCurrency": "CNY",
-  "amount": 50000,
+  "token": "USDC",
+  "amount": "100",
+  "toCurrency": "NGN",
+  "network": "base",
   "recipientDetails": {
-    "name": "Beijing Trading Co",
-    "accountNumber": "6214********1234",
-    "bankCode": "ICBCCNBJ",
-    "address": "Beijing, China"
+    "institution": "ABNGNGLA",
+    "accountNumber": "0123456789",
+    "accountName": "John Doe",
+    "memo": "Payment for services"
   },
-  "reference": "INV-2024-001",
-  "webhookUrl": "https://yourbank.com/nedapay/webhook"
+  "reference": "ORD-2024-001",
+  "webhookUrl": "https://yourbank.com/webhook"
 }`}</code>
                         </pre>
                         <Button
@@ -229,15 +245,17 @@ export default function DocsPage() {
                           variant="ghost"
                           className="absolute top-2 right-2"
                           onClick={() => copyToClipboard(`{
-  "fromCurrency": "TZS",
-  "toCurrency": "CNY",
-  "amount": 50000,
+  "token": "USDC",
+  "amount": "100",
+  "toCurrency": "NGN",
+  "network": "base",
   "recipientDetails": {
-    "name": "Beijing Trading Co",
-    "accountNumber": "6214********1234",
-    "bankCode": "ICBCCNBJ"
+    "institution": "ABNGNGLA",
+    "accountNumber": "0123456789",
+    "accountName": "John Doe",
+    "memo": "Payment for services"
   },
-  "reference": "INV-2024-001"
+  "reference": "ORD-2024-001"
 }`, 'create-order')}
                         >
                           {copiedCode === 'create-order' ? (
@@ -255,16 +273,19 @@ export default function DocsPage() {
                         <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
                           <code>{`{
   "success": true,
-  "orderId": "order_abc123xyz",
-  "status": "pending",
-  "fromAmount": 50000,
-  "fromCurrency": "TZS",
-  "toAmount": 122.50,
-  "toCurrency": "CNY",
-  "exchangeRate": 0.00245,
-  "bankMarkup": 0.25,
-  "estimatedCompletion": "2025-10-22T15:30:00Z",
-  "createdAt": "2025-10-22T14:00:00Z"
+  "data": {
+    "orderId": "order_abc123xyz",
+    "paycrestOrderId": "7a0f32a1-2969-4446-9f91-d71e38978881",
+    "status": "initiated",
+    "amount": "100",
+    "token": "USDC",
+    "toCurrency": "NGN",
+    "exchangeRate": 1650.50,
+    "estimatedAmount": "165,050.00 NGN",
+    "receiveAddress": "0x1234...5678",
+    "validUntil": "2024-11-29T16:30:00Z",
+    "createdAt": "2024-11-29T15:00:00Z"
+  }
 }`}</code>
                         </pre>
                       </div>
@@ -281,16 +302,25 @@ export default function DocsPage() {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    fromCurrency: 'TZS',
-    toCurrency: 'CNY',
-    amount: 50000,
-    recipientDetails: { /* ... */ },
-    reference: 'INV-2024-001'
+    token: 'USDC',
+    amount: '100',
+    toCurrency: 'NGN',
+    network: 'base',
+    recipientDetails: {
+      institution: 'ABNGNGLA',
+      accountNumber: '0123456789',
+      accountName: 'John Doe',
+      memo: 'Payment for services'
+    },
+    reference: 'ORD-2024-001'
   })
 });
 
-const order = await response.json();
-console.log('Order created:', order.orderId);`}</code>
+const result = await response.json();
+if (result.success) {
+  console.log('Order created:', result.data.orderId);
+  console.log('Send USDC to:', result.data.receiveAddress);
+}`}</code>
                         </pre>
                         <Button
                           size="sm"
@@ -303,11 +333,17 @@ console.log('Order created:', order.orderId);`}</code>
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    fromCurrency: 'TZS',
-    toCurrency: 'CNY',
-    amount: 50000,
-    recipientDetails: { /* ... */ },
-    reference: 'INV-2024-001'
+    token: 'USDC',
+    amount: '100',
+    toCurrency: 'NGN',
+    network: 'base',
+    recipientDetails: {
+      institution: 'ABNGNGLA',
+      accountNumber: '0123456789',
+      accountName: 'John Doe',
+      memo: 'Payment for services'
+    },
+    reference: 'ORD-2024-001'
   })
 });`, 'nodejs-example')}
                         >
@@ -319,6 +355,50 @@ console.log('Order created:', order.orderId);`}</code>
                         </Button>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Supported Currencies & Banks</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Paycrest supports 9+ currencies across Africa with 100+ bank institutions:
+                  </p>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="font-semibold text-sm">Nigeria (NGN)</div>
+                      <div className="text-xs text-muted-foreground mt-1">Access, GT Bank, UBA, etc.</div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="font-semibold text-sm">Kenya (KES)</div>
+                      <div className="text-xs text-muted-foreground mt-1">Equity, KCB, M-PESA, etc.</div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="font-semibold text-sm">Tanzania (TZS)</div>
+                      <div className="text-xs text-muted-foreground mt-1">CRDB, NMB, Airtel, etc.</div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="font-semibold text-sm">Uganda (UGX)</div>
+                      <div className="text-xs text-muted-foreground mt-1">Stanbic, Centenary, MTN, etc.</div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="font-semibold text-sm">Ghana (GHS)</div>
+                      <div className="text-xs text-muted-foreground mt-1">Ecobank, GCB, Vodafone, etc.</div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="font-semibold text-sm">+ 4 More</div>
+                      <div className="text-xs text-muted-foreground mt-1">MWK, XOF, INR, BRL</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">📋 Getting Bank Codes</h4>
+                    <p className="text-sm text-blue-800 dark:text-blue-400 mb-2">
+                      Use the institutions endpoint to get valid bank codes for each currency:
+                    </p>
+                    <code className="text-xs bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded">
+                      GET /api/v1/institutions?currency=NGN
+                    </code>
                   </div>
                 </div>
 
@@ -370,42 +450,47 @@ Response:
                   
                   <div className="space-y-3 mb-6">
                     <div className="p-3 bg-muted/30 rounded-lg">
-                      <code className="text-sm font-semibold">payment.pending</code>
-                      <p className="text-sm text-muted-foreground mt-1">Payment order created and awaiting PSP fulfillment</p>
+                      <code className="text-sm font-semibold">order.initiated</code>
+                      <p className="text-sm text-muted-foreground mt-1">Paycrest order created, awaiting USDC deposit to receive address</p>
                     </div>
                     <div className="p-3 bg-muted/30 rounded-lg">
-                      <code className="text-sm font-semibold">payment.processing</code>
-                      <p className="text-sm text-muted-foreground mt-1">PSP is processing the payment</p>
+                      <code className="text-sm font-semibold">order.processing</code>
+                      <p className="text-sm text-muted-foreground mt-1">USDC received, Paycrest is converting to fiat</p>
                     </div>
                     <div className="p-3 bg-muted/30 rounded-lg">
-                      <code className="text-sm font-semibold">payment.completed</code>
-                      <p className="text-sm text-muted-foreground mt-1">Payment successfully delivered to recipient</p>
+                      <code className="text-sm font-semibold">order.completed</code>
+                      <p className="text-sm text-muted-foreground mt-1">Fiat successfully delivered to recipient&apos;s bank account</p>
                     </div>
                     <div className="p-3 bg-muted/30 rounded-lg">
-                      <code className="text-sm font-semibold">payment.failed</code>
-                      <p className="text-sm text-muted-foreground mt-1">Payment failed and requires attention</p>
+                      <code className="text-sm font-semibold">order.failed</code>
+                      <p className="text-sm text-muted-foreground mt-1">Payment failed (invalid account, timeout, etc.)</p>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <code className="text-sm font-semibold">order.refunded</code>
+                      <p className="text-sm text-muted-foreground mt-1">Order cancelled, USDC refunded to sender</p>
                     </div>
                   </div>
 
                   <h4 className="font-semibold mb-2">Webhook Payload Example</h4>
                   <div className="relative">
                     <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm">
-                      <code>{`POST https://yourbank.com/nedapay/webhook
+                      <code>{`POST https://yourbank.com/webhook
 Content-Type: application/json
 X-Webhook-Signature: sha256=...
 
 {
-  "event": "payment.completed",
+  "event": "order.completed",
   "orderId": "order_abc123xyz",
+  "paycrestOrderId": "7a0f32a1-2969-4446-9f91",
   "status": "completed",
-  "fromAmount": 50000,
-  "fromCurrency": "TZS",
-  "toAmount": 122.50,
-  "toCurrency": "CNY",
-  "bankMarkup": 0.25,
+  "amount": "100",
+  "token": "USDC",
+  "toCurrency": "NGN",
+  "recipientAccount": "0123456789",
+  "recipientBank": "Access Bank",
   "txHash": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-  "completedAt": "2025-10-22T15:25:00Z",
-  "reference": "INV-2024-001"
+  "completedAt": "2024-11-29T15:25:00Z",
+  "reference": "ORD-2024-001"
 }`}</code>
                     </pre>
                   </div>
