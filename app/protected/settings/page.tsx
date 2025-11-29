@@ -25,6 +25,16 @@ export default function Settings() {
       // Fetch KYB status
       fetchKYBStatus(currentUser.id);
       
+      // Add visibility change listener to refresh status when user comes back
+      const handleVisibilityChange = () => {
+        if (!document.hidden && currentUser) {
+          console.log('Page visible again, refreshing KYB status...');
+          fetchKYBStatus(currentUser.id);
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
       // Check if provider has completed onboarding
       if (currentUser.scope?.toLowerCase() === 'provider' || currentUser.scope?.toLowerCase() === 'psp') {
         checkProviderProfile(currentUser.id);
@@ -33,6 +43,11 @@ export default function Settings() {
       } else {
         setCheckingProfile(false);
       }
+      
+      // Cleanup listener on unmount
+      return () => {
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -59,7 +74,8 @@ export default function Settings() {
 
   const fetchKYBStatus = async (userId: string) => {
     try {
-      const response = await fetch('/api/kyb/status', {
+      const response = await fetch('/api/kyb/upload', {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${userId}`
         }
@@ -67,7 +83,10 @@ export default function Settings() {
       
       if (response.ok) {
         const data = await response.json();
+        console.log('KYB Status Response:', data);
         setKybStatus(data.status || 'not_started');
+      } else {
+        console.error('Failed to fetch KYB status:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching KYB status:', error);
