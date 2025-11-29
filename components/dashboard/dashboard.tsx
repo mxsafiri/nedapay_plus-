@@ -508,7 +508,7 @@ export function Dashboard({ user, userRole }: DashboardProps) {
                         <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                           <Button 
                             className="h-14 px-8 text-base font-bold rounded-2xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-cyan-600 hover:from-blue-600 hover:via-blue-700 hover:to-cyan-700 text-white border-0 backdrop-blur-xl relative overflow-hidden group"
-                            onClick={() => window.location.href = '/protected/docs'}
+                            onClick={() => window.location.href = '/protected/docs-v2'}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             <ArrowUpRight className="w-5 h-5 mr-2.5 relative z-10" />
@@ -554,7 +554,7 @@ export function Dashboard({ user, userRole }: DashboardProps) {
                         <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                           <Button 
                             className="h-14 px-8 text-base font-bold rounded-2xl shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 hover:from-blue-600 hover:via-blue-700 hover:to-indigo-700 text-white border-0 backdrop-blur-xl relative overflow-hidden group"
-                            onClick={() => window.location.href = '/protected/docs'}
+                            onClick={() => window.location.href = '/protected/docs-v2'}
                           >
                             <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                             <Zap className="w-5 h-5 mr-2.5 relative z-10" />

@@ -21,7 +21,7 @@ const navigation = [
   },
   {
     name: "Docs",
-    href: "/protected/docs",
+    href: "/protected/docs-v2",
     icon: FileText,
   },
   {

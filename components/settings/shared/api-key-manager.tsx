@@ -461,7 +461,7 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys, kybStatus }: ApiK
                 <p>3. Store them securely in your application</p>
                 <p>4. Use them to authenticate API requests</p>
               </div>
-              <Button variant="outline" className="h-10 px-5 rounded-xl border-border/50 hover:bg-muted/40 transition-all" onClick={() => window.location.href = '/protected/docs'}>
+              <Button variant="outline" className="h-10 px-5 rounded-xl border-border/50 hover:bg-muted/40 transition-all" onClick={() => window.location.href = '/protected/docs-v2'}>
                 View API Documentation
               </Button>
             </div>
