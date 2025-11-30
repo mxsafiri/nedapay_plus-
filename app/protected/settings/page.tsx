@@ -16,40 +16,48 @@ export default function Settings() {
 
   useEffect(() => {
     const currentUser = getCurrentUser();
-    if (currentUser) {
-      setUser(currentUser);
-      
-      // Fetch API keys
-      fetchApiKeys(currentUser.id);
-      
-      // Fetch KYB status
-      fetchKYBStatus(currentUser.id);
-      
-      // Add visibility change listener to refresh status when user comes back
-      const handleVisibilityChange = () => {
-        if (!document.hidden && currentUser) {
-          console.log('Page visible again, refreshing KYB status...');
-          fetchKYBStatus(currentUser.id);
-        }
-      };
-      
-      document.addEventListener('visibilitychange', handleVisibilityChange);
-      
-      // Check if provider has completed onboarding
-      if (currentUser.scope?.toLowerCase() === 'provider' || currentUser.scope?.toLowerCase() === 'psp') {
-        checkProviderProfile(currentUser.id);
-      } else if (currentUser.scope?.toLowerCase() === 'sender' || currentUser.scope?.toLowerCase() === 'bank') {
-        checkSenderProfile(currentUser.id);
-      } else {
-        setCheckingProfile(false);
-      }
-      
-      // Cleanup listener on unmount
-      return () => {
-        document.removeEventListener('visibilitychange', handleVisibilityChange);
-      };
+
+    // If no user, stop loading and let layout handle redirect
+    if (!currentUser) {
+      setLoading(false);
+      setCheckingProfile(false);
+      return;
     }
+
+    setUser(currentUser);
+
+    // Fetch API keys
+    fetchApiKeys(currentUser.id);
+
+    // Fetch KYB status
+    fetchKYBStatus(currentUser.id);
+
+    // Add visibility change listener to refresh status when user comes back
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Page visible again, refreshing KYB status...');
+        fetchKYBStatus(currentUser.id);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Check if provider/sender has completed onboarding
+    if (currentUser.scope?.toLowerCase() === 'provider' || currentUser.scope?.toLowerCase() === 'psp') {
+      checkProviderProfile(currentUser.id);
+    } else if (currentUser.scope?.toLowerCase() === 'sender' || currentUser.scope?.toLowerCase() === 'bank') {
+      checkSenderProfile(currentUser.id);
+    } else {
+      setCheckingProfile(false);
+    }
+
+    // We can stop the main loading spinner; profile checks manage their own state
     setLoading(false);
+
+    // Cleanup listener on unmount
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
