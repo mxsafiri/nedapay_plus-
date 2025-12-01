@@ -5,7 +5,7 @@ import { Mail, MapPin, Phone } from 'lucide-react';
 
 export default function Footer() {
   return (
-    <footer className="relative bg-black border-t border-white/10">
+    <footer className="relative bg-slate-50 text-slate-800 border-t border-slate-200 dark:bg-black dark:text-white dark:border-white/10">
       {/* Grid background */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -18,14 +18,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div className="col-span-1 md:col-span-2">
-            <h3 className="text-2xl font-bold text-white mb-4">
+            <h3 className="text-2xl font-bold mb-4">
               NEDAplus<span className="text-blue-500">+</span>
             </h3>
-            <p className="text-gray-400 mb-4 max-w-md">
+            <p className="text-slate-600 dark:text-gray-400 mb-4 max-w-md">
               Africa&apos;s leading B2B payment infrastructure for cross-border settlements. 
               Regulated by the Central Bank of Tanzania.
             </p>
-            <div className="flex flex-col gap-2 text-sm text-gray-400">
+            <div className="flex flex-col gap-2 text-sm text-slate-600 dark:text-gray-400">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-blue-400" />
                 <span>Dar es Salaam, Tanzania</span>
@@ -45,15 +45,15 @@ export default function Footer() {
 
           {/* Products */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Products</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <h4 className="font-semibold mb-4">Products</h4>
+            <ul className="space-y-2 text-sm text-slate-600 dark:text-gray-400">
               <li>
-                <Link href="https://nedapayplus.xyz/auth/login" className="hover:text-white transition-colors">
+                <Link href="https://nedapayplus.xyz/auth/login" className="hover:text-black dark:hover:text-white transition-colors">
                   NEDAplus+ Cross-Border
                 </Link>
               </li>
               <li>
-                <Link href="https://app.ntzs.co.tz/" className="hover:text-white transition-colors">
+                <Link href="https://app.ntzs.co.tz/" className="hover:text-black dark:hover:text-white transition-colors">
                   Tanzania nTZS Stablecoin
                 </Link>
               </li>
@@ -72,8 +72,8 @@ export default function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Company</h4>
-            <ul className="space-y-2 text-sm text-gray-400">
+            <h4 className="font-semibold mb-4">Company</h4>
+            <ul className="space-y-2 text-sm text-slate-600 dark:text-gray-400">
               <li>
                 <Link href="https://nedapayplus.xyz/auth/login" className="hover:text-white transition-colors">
                   Sign In
@@ -85,7 +85,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="#" className="hover:text-black dark:hover:text-white transition-colors">
                   Documentation
                 </a>
               </li>
@@ -99,13 +99,13 @@ export default function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="border-t border-white/10 pt-8">
+        <div className="border-t border-slate-200 dark:border-white/10 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-slate-600 dark:text-gray-400">
               © 2025 NEDAplus. All rights reserved. Licensed by Bank of Tanzania.
             </p>
-            <div className="flex gap-6 text-sm text-gray-400">
-              <a href="#" className="hover:text-white transition-colors">
+            <div className="flex gap-6 text-sm text-slate-600 dark:text-gray-400">
+              <a href="#" className="hover:text-black dark:hover:text-white transition-colors">
                 Privacy Policy
               </a>
               <a href="#" className="hover:text-white transition-colors">

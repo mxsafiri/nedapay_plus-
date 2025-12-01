@@ -18,7 +18,7 @@ const allPartners = [...partners, ...partners, ...partners];
 
 export default function PartnersSection() {
   return (
-    <section className="relative py-16 bg-black overflow-hidden">
+    <section className="relative py-16 bg-slate-50 dark:bg-black overflow-hidden">
       {/* Grid background */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0" style={{
@@ -27,16 +27,16 @@ export default function PartnersSection() {
         }} />
       </div>
       
-      {/* Gradient overlays for fade effect */}
-      <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-black to-transparent z-10" />
-      <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-black to-transparent z-10" />
+      {/* Gradient overlays for fade effect (only in dark mode) */}
+      <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-transparent to-transparent dark:from-black dark:to-transparent z-10" />
+      <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-transparent to-transparent dark:from-black dark:to-transparent z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-medium text-white mb-6">
+        <div className="text-center mb-16 text-slate-900 dark:text-white">
+          <h2 className="text-4xl md:text-5xl font-medium mb-6">
             Tanzania&apos;s first regulated stablecoin powering global finance
           </h2>
-          <p className="text-lg text-gray-400 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-lg text-slate-700 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
             Redeemable 1:1 for TZ shilling, nTZS enables 24/7 liquidity for near-instant, low-cost global payments. 
             We are building the biggest digital asset reserve in Africa.
           </p>
@@ -44,7 +44,7 @@ export default function PartnersSection() {
         
         {/* Featured NTZ Stable - Two Column Layout */}
         <div className="max-w-5xl mx-auto">
-          <div className="relative backdrop-blur-2xl bg-gradient-to-br from-gray-900/50 to-gray-800/30 rounded-3xl p-8 md:p-10 border border-white/20 hover:border-blue-400/30 transition-all duration-300 overflow-hidden">
+          <div className="relative backdrop-blur-2xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-gray-900/50 dark:to-gray-800/30 rounded-3xl p-8 md:p-10 border border-slate-200 dark:border-white/20 hover:border-blue-400/30 transition-all duration-300 overflow-hidden">
             {/* Perspective Grid Background */}
             <div 
               className="absolute inset-0" 
@@ -76,11 +76,11 @@ export default function PartnersSection() {
               </div>
               
               {/* Right: Text Content */}
-              <div className="text-left space-y-3">
-                <h4 className="text-2xl md:text-3xl font-medium text-white">
+              <div className="text-left space-y-3 text-slate-900 dark:text-white">
+                <h4 className="text-2xl md:text-3xl font-medium">
                   Why <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">nTZS Stablecoin</span>
                 </h4>
-                <p className="text-gray-300 text-base leading-relaxed">
+                <p className="text-slate-700 dark:text-gray-300 text-base leading-relaxed">
                   nTZS stands apart as the <span className="text-blue-400 font-medium">first regulated stablecoin in Tanzania</span>. 
                   As a fully compliant digital asset, nTZS offers unparalleled trust and transparency, ensuring security 
                   for all users, institutions, and businesses.
