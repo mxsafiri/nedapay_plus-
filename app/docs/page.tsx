@@ -10,6 +10,9 @@ type TrackId = "banks" | "fintechs" | "psps";
 export default function PublicDocsLanding() {
   const router = useRouter();
   const [activeTrack, setActiveTrack] = useState<TrackId>("banks");
+  const [activeGlance, setActiveGlance] = useState<
+    "order" | "rails" | "compliance" | null
+  >("order");
 
   const personas = [
     {
@@ -88,7 +91,7 @@ export default function PublicDocsLanding() {
               <span>For banks, fintechs & PSPs</span>
             </div>
 
-            <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
+            <h1 className="hero-docs-heading text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
               Get started with the NedaPay integration
             </h1>
 
@@ -133,42 +136,138 @@ export default function PublicDocsLanding() {
               Integration at a glance
             </p>
             <div className="space-y-4 text-xs text-slate-300">
-              <div className="flex items-start gap-3 rounded-xl bg-slate-900/80 p-3">
-                <Banknote className="mt-0.5 h-4 w-4 text-emerald-400" />
-                <div>
-                  <p className="font-medium">Initiate a payment order</p>
-                  <p className="text-[11px] text-slate-400">
-                    Your backend creates a payment order with amount, corridor,
-                    and recipient details. NedaPay assigns the optimal route
-                    (digital-asset tokens or fiat partners) behind the scenes.
-                  </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveGlance((prev) => (prev === "order" ? null : "order"))
+                }
+                className={`w-full text-left flex flex-col gap-2 rounded-xl p-3 transition border
+                  ${
+                    activeGlance === "order"
+                      ? "border-emerald-500/70 bg-slate-900/90 shadow-lg shadow-emerald-500/10"
+                      : "border-transparent bg-slate-900/80 hover:bg-slate-900"
+                  }`}
+              >
+                <div className="flex items-start gap-3">
+                  <Banknote className="mt-0.5 h-4 w-4 text-emerald-400" />
+                  <div>
+                    <p className="font-medium">Initiate a payment order</p>
+                    <p className="text-[11px] text-slate-400">
+                      Your backend creates a payment order with amount, corridor,
+                      and recipient details. NedaPay assigns the optimal route
+                      (digital-asset tokens or fiat partners) behind the scenes.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl bg-slate-900/80 p-3">
-                <Code2 className="mt-0.5 h-4 w-4 text-emerald-400" />
-                <div>
-                  <p className="font-medium">Use one API, multiple fulfillment rails</p>
-                  <p className="text-[11px] text-slate-400">
-                    You integrate once with NedaPay. We handle routing across
-                    digital-asset token settlement and fiat payout networks like
-                    local PSPs or bank partners.
-                  </p>
+                {activeGlance === "order" && (
+                  <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-950/80 p-3 text-[10px] text-slate-100">
+{`POST /api/v1/payment-orders
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+
+{
+  "sourceCurrency": "TZS",
+  "destinationCurrency": "KES",
+  "amount": 100000,
+  "reference": "INVOICE-001"
+}`}
+                  </pre>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveGlance((prev) => (prev === "rails" ? null : "rails"))
+                }
+                className={`w-full text-left flex flex-col gap-2 rounded-xl p-3 transition border
+                  ${
+                    activeGlance === "rails"
+                      ? "border-emerald-500/70 bg-slate-900/90 shadow-lg shadow-emerald-500/10"
+                      : "border-transparent bg-slate-900/80 hover:bg-slate-900"
+                  }`}
+              >
+                <div className="flex items-start gap-3">
+                  <Code2 className="mt-0.5 h-4 w-4 text-emerald-400" />
+                  <div>
+                    <p className="font-medium">Use one API, multiple fulfillment rails</p>
+                    <p className="text-[11px] text-slate-400">
+                      You integrate once with NedaPay. We handle routing across
+                      digital-asset token settlement and fiat payout networks like
+                      local PSPs or bank partners.
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl bg-slate-900/80 p-3">
-                <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
-                <div>
-                  <p className="font-medium">Compliance-friendly wording</p>
-                  <p className="text-[11px] text-slate-400">
-                    The platform abstracts digital-asset tokens used for
-                    settlement so banks and regulators see a clean, fiat-first
-                    experience in dashboards and reports.
-                  </p>
+                {activeGlance === "rails" && (
+                  <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-950/80 p-3 text-[10px] text-slate-100">
+{`curl https://api.nedapayplus.com/api/v1/payment-orders \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "settlementRail": "digital_asset_token"
+  }'`}
+                  </pre>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveGlance((prev) =>
+                    prev === "compliance" ? null : "compliance"
+                  )
+                }
+                className={`w-full text-left flex flex-col gap-2 rounded-xl p-3 transition border
+                  ${
+                    activeGlance === "compliance"
+                      ? "border-emerald-500/70 bg-slate-900/90 shadow-lg shadow-emerald-500/10"
+                      : "border-transparent bg-slate-900/80 hover:bg-slate-900"
+                  }`}
+              >
+                <div className="flex items-start gap-3">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
+                  <div>
+                    <p className="font-medium">Compliance-friendly wording</p>
+                    <p className="text-[11px] text-slate-400">
+                      The platform abstracts digital-asset tokens used for
+                      settlement so banks and regulators see a clean, fiat-first
+                      experience in dashboards and reports.
+                    </p>
+                  </div>
                 </div>
-              </div>
+                {activeGlance === "compliance" && (
+                  <pre className="mt-2 overflow-x-auto rounded-lg bg-slate-950/80 p-3 text-[10px] text-slate-100">
+{`// Example: settlement rail described in a dashboard
+{
+  "settlementRail": "digital_asset_token", // tokens for digital assets
+  "reportedToBankAs": "Cross-border payout"
+}`}
+                  </pre>
+                )}
+              </button>
             </div>
           </div>
         </section>
+
+        {/* Local hero heading animation */}
+        <style jsx>{`
+          .hero-docs-heading {
+            opacity: 0;
+            transform: translateY(14px);
+            animation: hero-docs-slide-up 0.85s ease-out forwards;
+          }
+
+          @keyframes hero-docs-slide-up {
+            0% {
+              opacity: 0;
+              transform: translateY(18px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}</style>
 
         {/* Personas */}
         <section className="space-y-6">
@@ -458,7 +557,7 @@ Authorization: Bearer YOUR_PROVIDER_KEY
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/signin"
+              href="https://nedapayplus.xyz/auth/login"
               className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-xs font-medium text-slate-900 shadow-sm hover:bg-white"
             >
               Sign in to dashboard
