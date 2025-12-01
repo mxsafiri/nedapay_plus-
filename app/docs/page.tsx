@@ -104,7 +104,7 @@ export default function PublicDocsLanding() {
 
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={() => router.push("/signup")}
+                onClick={() => router.push("https://nedapayplus.xyz/auth/login")}
                 className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-slate-950 shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400"
               >
                 Create an account
