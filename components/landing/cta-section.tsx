@@ -64,19 +64,26 @@ export default function CTASection() {
           </div>
 
           {/* Trust indicators */}
-          <div className="mt-12 flex flex-wrap gap-8 justify-center items-center text-sm text-gray-400">
-            <div className="flex items-center gap-2">
+          <div className="mt-12 flex flex-wrap gap-4 justify-center items-center text-sm text-gray-400">
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
               <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
               <span>BoT Licensed</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
               <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
               <span>ISO 27001 Certified</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2">
               <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
               <span>AML/KYC Compliant</span>
             </div>
+            <Link
+              href="/docs"
+              className="flex items-center gap-2 rounded-full border border-emerald-400/60 bg-emerald-500/10 px-4 py-2 text-emerald-200 hover:bg-emerald-500/20 hover:text-emerald-100 transition"
+            >
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+              <span>View Docs</span>
+            </Link>
           </div>
         </div>
       </div>
