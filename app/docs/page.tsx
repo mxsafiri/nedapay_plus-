@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ArrowRight, ShieldCheck, Banknote, Network, Code2, Globe2 } from "lucide-react";
+import { ThemeSwitcher } from "@/components/theme-switcher";
 
 type TrackId = "banks" | "fintechs" | "psps";
 
@@ -81,13 +82,16 @@ export default function PublicDocsLanding() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900 text-slate-100">
+    <div className="min-h-screen bg-white text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <div className="fixed right-4 top-4 z-50">
+        <ThemeSwitcher />
+      </div>
       <div className="mx-auto flex max-w-6xl flex-col gap-16 px-4 pb-24 pt-16 sm:px-6 lg:px-8">
         {/* Hero */}
         <section className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-xl space-y-6">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/60 px-3 py-1 text-xs font-medium text-slate-300">
-              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+              <ShieldCheck className="h-3.5 w-3.5 text-blue-500" />
               <span>For banks, fintechs & PSPs</span>
             </div>
 
@@ -95,7 +99,7 @@ export default function PublicDocsLanding() {
               Get started with the NedaPay integration
             </h1>
 
-            <p className="text-sm text-slate-300 sm:text-base">
+            <p className="text-sm text-slate-700 dark:text-slate-300 sm:text-base">
               NedaPay is a B2B2C payment infrastructure layer. Banks, fintechs, and
               payment service providers use our APIs to initiate cross-border
               payouts, while NedaPay manages orchestration, digital-asset token
@@ -105,34 +109,34 @@ export default function PublicDocsLanding() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={() => router.push("https://nedapayplus.xyz/auth/login")}
-                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-medium text-slate-950 shadow-lg shadow-emerald-500/25 transition hover:bg-emerald-400"
+                className="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-slate-50 shadow-lg shadow-blue-500/25 transition hover:bg-blue-500"
               >
                 Create an account
                 <ArrowRight className="h-4 w-4" />
               </button>
               <Link
                 href="/protected/docs-v2"
-                className="inline-flex items-center gap-2 text-sm font-medium text-emerald-300 hover:text-emerald-200"
+                className="inline-flex items-center gap-2 text-sm font-medium text-blue-500 hover:text-blue-400"
               >
                 Skip to authenticated API docs
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
-            <div className="flex flex-wrap gap-4 pt-2 text-xs text-slate-400">
+            <div className="flex flex-wrap gap-4 pt-2 text-xs text-slate-600 dark:text-slate-400">
               <div className="flex items-center gap-2">
-                <Network className="h-3.5 w-3.5 text-emerald-400" />
+                <Network className="h-3.5 w-3.5 text-blue-500" />
                 <span>Omni-channel payment layer</span>
               </div>
               <div className="flex items-center gap-2">
-                <Globe2 className="h-3.5 w-3.5 text-emerald-400" />
+                <Globe2 className="h-3.5 w-3.5 text-blue-500" />
                 <span>Pay anywhere, settle everywhere</span>
               </div>
             </div>
           </div>
 
           <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/40 p-5 shadow-xl shadow-slate-950/60">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-emerald-300">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-blue-400">
               Integration at a glance
             </p>
             <div className="space-y-4 text-xs text-slate-300">
@@ -144,12 +148,12 @@ export default function PublicDocsLanding() {
                 className={`w-full text-left flex flex-col gap-2 rounded-xl p-3 transition border
                   ${
                     activeGlance === "order"
-                      ? "border-emerald-500/70 bg-slate-900/90 shadow-lg shadow-emerald-500/10"
+                      ? "border-blue-500/70 bg-slate-900/90 shadow-lg shadow-blue-500/10"
                       : "border-transparent bg-slate-900/80 hover:bg-slate-900"
                   }`}
               >
                 <div className="flex items-start gap-3">
-                  <Banknote className="mt-0.5 h-4 w-4 text-emerald-400" />
+                  <Banknote className="mt-0.5 h-4 w-4 text-blue-500" />
                   <div>
                     <p className="font-medium">Initiate a payment order</p>
                     <p className="text-[11px] text-slate-400">
@@ -183,12 +187,12 @@ Content-Type: application/json
                 className={`w-full text-left flex flex-col gap-2 rounded-xl p-3 transition border
                   ${
                     activeGlance === "rails"
-                      ? "border-emerald-500/70 bg-slate-900/90 shadow-lg shadow-emerald-500/10"
+                      ? "border-blue-500/70 bg-slate-900/90 shadow-lg shadow-blue-500/10"
                       : "border-transparent bg-slate-900/80 hover:bg-slate-900"
                   }`}
               >
                 <div className="flex items-start gap-3">
-                  <Code2 className="mt-0.5 h-4 w-4 text-emerald-400" />
+                  <Code2 className="mt-0.5 h-4 w-4 text-blue-500" />
                   <div>
                     <p className="font-medium">Use one API, multiple fulfillment rails</p>
                     <p className="text-[11px] text-slate-400">
@@ -220,12 +224,12 @@ Content-Type: application/json
                 className={`w-full text-left flex flex-col gap-2 rounded-xl p-3 transition border
                   ${
                     activeGlance === "compliance"
-                      ? "border-emerald-500/70 bg-slate-900/90 shadow-lg shadow-emerald-500/10"
+                      ? "border-blue-500/70 bg-slate-900/90 shadow-lg shadow-blue-500/10"
                       : "border-transparent bg-slate-900/80 hover:bg-slate-900"
                   }`}
               >
                 <div className="flex items-start gap-3">
-                  <ShieldCheck className="mt-0.5 h-4 w-4 text-emerald-400" />
+                  <ShieldCheck className="mt-0.5 h-4 w-4 text-blue-500" />
                   <div>
                     <p className="font-medium">Compliance-friendly wording</p>
                     <p className="text-[11px] text-slate-400">
@@ -275,7 +279,7 @@ Content-Type: application/json
             <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
               Who NedaPay is for
             </h2>
-            <p className="max-w-xl text-xs text-slate-400">
+            <p className="max-w-xl text-xs text-slate-600 dark:text-slate-400">
               Start with the track that matches your role. The underlying APIs
               are the same; what changes is how you expose them to your
               customers and how revenue is shared.
@@ -327,7 +331,7 @@ Content-Type: application/json
               <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
                 Step-by-step integration
               </h2>
-              <p className="max-w-xl pt-1 text-xs text-slate-400">
+              <p className="max-w-xl pt-1 text-xs text-slate-600 dark:text-slate-400">
                 Choose the track that matches your role. Each guide walks through
                 authentication, creating a payment order, handling webhooks, and
                 reconciling payouts across digital-asset tokens and fiat rails.
@@ -512,7 +516,7 @@ Authorization: Bearer YOUR_PROVIDER_KEY
               <h3 className="text-sm font-semibold text-slate-50">
                 Common lifecycle & webhook example
               </h3>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-[11px] text-slate-700 dark:text-slate-300">
                 Regardless of the track, every integration follows the same
                 pattern: create an order, fund or fulfill it, receive status
                 updates, and reconcile.
@@ -549,7 +553,7 @@ Authorization: Bearer YOUR_PROVIDER_KEY
             <h2 className="text-sm font-semibold text-slate-50 sm:text-base">
               Ready for full API details?
             </h2>
-            <p className="max-w-xl text-xs text-slate-400">
+            <p className="max-w-xl text-xs text-slate-600 dark:text-slate-400">
               Log in to access the authenticated documentation, API reference,
               and live API playground. There you can generate API keys, test
               requests, and inspect responses in real time.
