@@ -13,13 +13,10 @@ export const metadata: Metadata = {
   description: "Seamless onramp and offramp payment solutions for global transactions",
   icons: {
     icon: [
-      {
-        url: '/logo.svg',
-        type: 'image/svg+xml',
-      },
+      { url: "/logo.svg", type: "image/svg+xml" },
     ],
-    shortcut: '/logo.svg',
-    apple: '/logo.svg',
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
   },
 };
 
