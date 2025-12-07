@@ -303,12 +303,14 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ success: false, error: `${token} token not configured in system` }, 500);
     }
 
-    // Create order ID
-    const orderId = isTestMode 
+    // Create order ID - must be a valid UUID for the database
+    const orderId = crypto.randomUUID();
+    // Store readable reference separately
+    const orderReference = isTestMode 
       ? `test_offramp_${Date.now()}_${crypto.randomBytes(6).toString('hex')}` 
       : `offramp_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
 
-    console.log(`📝 Creating off-ramp order: ${orderId}`);
+    console.log(`📝 Creating off-ramp order: ${orderId} (ref: ${orderReference})`);
 
     // === PAYCREST INTEGRATION ===
     
@@ -350,7 +352,7 @@ export async function POST(request: NextRequest) {
           fee_percent: markupPercentage,
           percent_settled: 0,
           protocol_fee: platformFee,
-          reference: reference || null,
+          reference: reference || orderReference,
           is_test_mode: isTestMode,
           
           // Paycrest-specific tracking
