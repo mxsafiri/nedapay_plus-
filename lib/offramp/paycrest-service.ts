@@ -65,15 +65,16 @@ export interface PaycrestInstitution {
 }
 
 export class PaycrestService {
-  private apiKey: string;
+  private clientSecret: string;
   private baseUrl: string;
 
   constructor() {
-    this.apiKey = process.env.PAYCREST_API_KEY!;
+    // Support both naming conventions
+    this.clientSecret = process.env.PAYCREST_CLIENT_SECRET || process.env.PAYCREST_API_KEY!;
     this.baseUrl = PAYCREST_API_BASE;
     
-    if (!this.apiKey) {
-      throw new Error('PAYCREST_API_KEY not configured in environment variables. Get your API key from app.paycrest.io dashboard.');
+    if (!this.clientSecret) {
+      throw new Error('PAYCREST_CLIENT_SECRET not configured in environment variables. Get your client secret from app.paycrest.io dashboard.');
     }
 
     console.log(`✅ Paycrest initialized with API base: ${this.baseUrl}`);
@@ -94,7 +95,7 @@ export class PaycrestService {
         `${this.baseUrl}/rates/${token}/${amount}/${toCurrency}?network=base`,
         {
           headers: {
-            'API-Key': this.apiKey,
+            'API-Key': this.clientSecret,
             'Content-Type': 'application/json'
           }
         }
@@ -133,7 +134,7 @@ export class PaycrestService {
         request,
         {
           headers: {
-            'API-Key': this.apiKey,
+            'API-Key': this.clientSecret,
             'Content-Type': 'application/json'
           }
         }
@@ -165,7 +166,7 @@ export class PaycrestService {
         `${this.baseUrl}/sender/orders/${paycrestOrderId}`,
         {
           headers: {
-            'API-Key': this.apiKey
+            'API-Key': this.clientSecret
           }
         }
       );
@@ -198,7 +199,7 @@ export class PaycrestService {
         `${this.baseUrl}/sender/orders?${params.toString()}`,
         {
           headers: {
-            'API-Key': this.apiKey
+            'API-Key': this.clientSecret
           }
         }
       );
@@ -222,7 +223,7 @@ export class PaycrestService {
         `${this.baseUrl}/institutions/${currency.toUpperCase()}`,
         {
           headers: {
-            'API-Key': this.apiKey
+            'API-Key': this.clientSecret
           }
         }
       );
