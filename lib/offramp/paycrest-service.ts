@@ -103,15 +103,35 @@ export class PaycrestService {
 
       console.log(`📊 Paycrest rate response:`, JSON.stringify(response.data, null, 2));
       
-      // Handle different response structures
-      const rate = response.data?.data || response.data;
+      // Handle Paycrest response - rate can be a string directly or an object
+      const rateData = response.data?.data;
       
-      if (!rate || !rate.rate) {
+      // If data is just a string (the rate), convert to our expected format
+      let rate: PaycrestRate;
+      if (typeof rateData === 'string') {
+        // Simple rate response - calculate estimated payout
+        const rateValue = parseFloat(rateData);
+        const amountValue = parseFloat(amount);
+        rate = {
+          rate: rateData,
+          token: token,
+          currency: toCurrency,
+          amount: amount,
+          estimatedPayout: (amountValue * rateValue).toFixed(2),
+          fees: {
+            senderFee: 0,
+            transactionFee: 0
+          }
+        };
+      } else if (rateData && typeof rateData === 'object') {
+        // Full rate object response
+        rate = rateData;
+      } else {
         throw new Error(`Invalid rate response from Paycrest: ${JSON.stringify(response.data)}`);
       }
       
       console.log(`💱 Rate: 1 ${token} = ${rate.rate} ${toCurrency}`);
-      console.log(`💰 Estimated payout: ${rate.estimatedPayout || 'N/A'} ${toCurrency}`);
+      console.log(`💰 Estimated payout: ${rate.estimatedPayout} ${toCurrency}`);
 
       return rate;
     } catch (error) {
