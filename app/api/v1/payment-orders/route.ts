@@ -315,22 +315,29 @@ export async function POST(request: NextRequest) {
       
       console.log(`💱 Paycrest rate: 1 ${token} = ${paycrestRate.rate} ${toCurrency}`);
       console.log(`💰 Expected payout: ${paycrestRate.estimatedPayout} ${toCurrency}`);
+      console.log(`📊 Full rate response:`, JSON.stringify(paycrestRate, null, 2));
+
+      // Safe access to fees with defaults
+      const fees = paycrestRate.fees || {};
+      const senderFee = fees.senderFee || 0;
+      const transactionFee = fees.transactionFee || 0;
+      const estimatedPayout = paycrestRate.estimatedPayout || '0';
 
       // Step 2: Create order in database (pending)
       const order = await prisma.payment_orders.create({
         data: {
           id: orderId,
           amount: parseFloat(amount),
-          amount_paid: parseFloat(paycrestRate.estimatedPayout),
+          amount_paid: parseFloat(estimatedPayout),
           amount_returned: 0,
           amount_in_usd: parseFloat(amount), // Already in USD
-          sender_fee: paycrestRate.fees.senderFee,
+          sender_fee: senderFee,
           rate: parseFloat(paycrestRate.rate),
           receive_address_text: accountNumber,
           status: 'pending',
           sender_profile_payment_orders: senderProfile.id,
           token_payment_orders: tokenRecord.id,
-          network_fee: paycrestRate.fees.transactionFee,
+          network_fee: transactionFee,
           fee_percent: markupPercentage,
           percent_settled: 0,
           protocol_fee: platformFee,
@@ -453,7 +460,7 @@ export async function POST(request: NextRequest) {
           status: 'processing',
           fromAmount: amount,
           fromCurrency: token,
-          toAmount: parseFloat(paycrestRate.estimatedPayout),
+          toAmount: parseFloat(estimatedPayout),
           toCurrency: toCurrency,
           reference: reference,
           txHash: txResult.transactionHash,
@@ -468,15 +475,15 @@ export async function POST(request: NextRequest) {
         status: 'processing',
         fromAmount: amount,
         fromCurrency: token,
-        toAmount: parseFloat(paycrestRate.estimatedPayout),
+        toAmount: parseFloat(estimatedPayout),
         toCurrency: toCurrency,
         exchangeRate: parseFloat(paycrestRate.rate),
         fees: {
           senderMarkup: senderMarkup,
           platformFee: platformFee,
-          paycrestSenderFee: paycrestRate.fees.senderFee,
-          networkFee: paycrestRate.fees.transactionFee,
-          totalFees: senderMarkup + platformFee + paycrestRate.fees.senderFee + paycrestRate.fees.transactionFee
+          paycrestSenderFee: senderFee,
+          networkFee: transactionFee,
+          totalFees: senderMarkup + platformFee + senderFee + transactionFee
         },
         paycrest: {
           orderId: paycrestOrder.id,
