@@ -238,7 +238,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Check Paycrest support
-    const paycrest = getPaycrestService();
+    let paycrest;
+    try {
+      paycrest = getPaycrestService();
+    } catch (initError: any) {
+      console.error('❌ Paycrest initialization failed:', initError);
+      return jsonResponse({ 
+        success: false, 
+        error: 'Payment service not configured',
+        details: initError.message
+      }, 500);
+    }
     
     if (!paycrest.isCurrencySupported(toCurrency)) {
       return jsonResponse({ 
@@ -513,7 +523,8 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ 
       success: false, 
       error: 'Failed to create off-ramp order',
-      details: error.message
+      details: error.message || String(error),
+      type: error.name || 'UnknownError'
     }, 500);
   }
 }
