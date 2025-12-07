@@ -7,6 +7,18 @@ import { createEVMService } from '@/lib/blockchain/evm-service';
 import { getNetworkSelector } from '@/lib/blockchain/network-selector';
 import crypto from 'crypto';
 
+// CORS headers for API access
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+// Handle CORS preflight requests
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 /**
  * Hash API key for matching against stored hash
  */
@@ -192,7 +204,8 @@ export async function POST(request: NextRequest) {
       token = 'USDC',      // Default to USDC
       toCurrency,          // Destination currency (NGN, KES, TZS, etc.)
       recipientDetails: {
-        bankCode,
+        bankCode: bodyBankCode,
+        institution,       // Accept 'institution' as alias for 'bankCode'
         accountNumber,
         accountName,
         memo
@@ -200,6 +213,9 @@ export async function POST(request: NextRequest) {
       reference,
       webhookUrl
     } = body;
+
+    // Accept either bankCode or institution
+    const bankCode = bodyBankCode || institution;
 
     // Validate required fields
     if (!amount || !toCurrency || !bankCode || !accountNumber || !accountName) {

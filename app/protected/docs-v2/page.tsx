@@ -407,7 +407,7 @@ export default function DocsV2Page() {
                       toCurrency: "NGN",
                       network: "base",
                       recipientDetails: {
-                        institution: "ABNGNGLA",
+                        bankCode: "ABNGNGLA",
                         accountNumber: "0123456789",
                         accountName: "John Doe",
                         memo: "Payment for services"
@@ -496,6 +496,199 @@ export default function DocsV2Page() {
                 </CardContent>
               </Card>
             )}
+
+            {/* API Reference Section */}
+            <Card className="mt-8">
+              <CardContent className="p-6 space-y-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                    <BookOpen className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold">API Reference</h2>
+                    <p className="text-sm text-muted-foreground">Complete endpoint documentation with examples</p>
+                  </div>
+                </div>
+
+                {/* Get Rates */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">GET</Badge>
+                    <code className="text-sm font-mono">/api/v1/rates</code>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Get real-time exchange rate for stablecoin → fiat conversion</p>
+                  <div className="bg-muted/50 rounded p-3">
+                    <p className="text-xs font-semibold mb-2">Query Parameters:</p>
+                    <ul className="text-xs space-y-1 text-muted-foreground">
+                      <li><code className="bg-muted px-1 rounded">token</code> - USDC or USDT (default: USDC)</li>
+                      <li><code className="bg-muted px-1 rounded">amount</code> - Amount to convert (required)</li>
+                      <li><code className="bg-muted px-1 rounded">currency</code> - Destination fiat currency (required)</li>
+                    </ul>
+                  </div>
+                  <div className="bg-slate-900 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-2">Example Request:</p>
+                    <code className="text-xs text-green-400">GET /api/v1/rates?token=USDC&amount=100&currency=NGN</code>
+                  </div>
+                  <div className="bg-slate-900 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-2">Success Response:</p>
+                    <pre className="text-xs text-slate-100 overflow-x-auto">{`{
+  "success": true,
+  "rate": "1580.50",
+  "token": "USDC",
+  "currency": "NGN",
+  "amount": "100",
+  "estimatedPayout": "158050.00",
+  "fees": {
+    "senderFee": 0.25,
+    "transactionFee": 0.10
+  },
+  "network": "base"
+}`}</pre>
+                  </div>
+                </div>
+
+                {/* Get Currencies */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">GET</Badge>
+                    <code className="text-sm font-mono">/api/v1/currencies</code>
+                  </div>
+                  <p className="text-sm text-muted-foreground">List all supported fiat currencies for off-ramp</p>
+                  <div className="bg-slate-900 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-2">Success Response:</p>
+                    <pre className="text-xs text-slate-100 overflow-x-auto">{`{
+  "success": true,
+  "currencies": [
+    { "code": "NGN", "name": "Nigerian Naira", "country": "Nigeria", "flag": "🇳🇬" },
+    { "code": "KES", "name": "Kenyan Shilling", "country": "Kenya", "flag": "🇰🇪" },
+    { "code": "TZS", "name": "Tanzanian Shilling", "country": "Tanzania", "flag": "🇹🇿" },
+    { "code": "UGX", "name": "Ugandan Shilling", "country": "Uganda", "flag": "🇺🇬" },
+    { "code": "GHS", "name": "Ghanaian Cedi", "country": "Ghana", "flag": "🇬🇭" }
+  ],
+  "count": 9
+}`}</pre>
+                  </div>
+                </div>
+
+                {/* Get Institutions */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">GET</Badge>
+                    <code className="text-sm font-mono">/api/v1/institutions</code>
+                  </div>
+                  <p className="text-sm text-muted-foreground">List supported banks/mobile money providers for a currency</p>
+                  <div className="bg-muted/50 rounded p-3">
+                    <p className="text-xs font-semibold mb-2">Query Parameters:</p>
+                    <ul className="text-xs space-y-1 text-muted-foreground">
+                      <li><code className="bg-muted px-1 rounded">currency</code> - Fiat currency code (required, e.g., NGN, KES, TZS)</li>
+                    </ul>
+                  </div>
+                  <div className="bg-slate-900 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-2">Example Request:</p>
+                    <code className="text-xs text-green-400">GET /api/v1/institutions?currency=NGN</code>
+                  </div>
+                  <div className="bg-slate-900 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-2">Success Response:</p>
+                    <pre className="text-xs text-slate-100 overflow-x-auto">{`{
+  "success": true,
+  "currency": "NGN",
+  "institutions": [
+    { "code": "GTBINGLA", "name": "Guaranty Trust Bank", "type": "bank" },
+    { "code": "ABORNGLA", "name": "Access Bank", "type": "bank" },
+    { "code": "FCMBNGLA", "name": "First City Monument Bank", "type": "bank" }
+  ],
+  "count": 25
+}`}</pre>
+                  </div>
+                </div>
+
+                {/* Create Payment Order */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">POST</Badge>
+                    <code className="text-sm font-mono">/api/v1/payment-orders</code>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Create a new stablecoin off-ramp payment order</p>
+                  <div className="bg-slate-900 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-2">Success Response:</p>
+                    <pre className="text-xs text-slate-100 overflow-x-auto">{`{
+  "success": true,
+  "orderId": "offramp_1701234567890_abc123",
+  "status": "processing",
+  "fromAmount": 100,
+  "fromCurrency": "USDC",
+  "toAmount": 158050.00,
+  "toCurrency": "NGN",
+  "exchangeRate": 1580.50,
+  "fees": {
+    "senderMarkup": 0.50,
+    "platformFee": 0.30,
+    "paycrestSenderFee": 0.25,
+    "networkFee": 0.10,
+    "totalFees": 1.15
+  },
+  "blockchain": {
+    "network": "base",
+    "transactionHash": "0x1234...abcd"
+  },
+  "estimatedCompletion": "1-2 minutes",
+  "createdAt": "2024-01-15T10:30:00Z",
+  "testMode": false
+}`}</pre>
+                  </div>
+                </div>
+
+                {/* Webhook Events */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Webhook className="h-4 w-4 text-purple-600" />
+                    <span className="font-semibold">Webhook Events</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">Events sent to your webhook URL during order lifecycle</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-muted/50 rounded p-2">
+                      <code className="text-xs">order.initiated</code>
+                      <p className="text-xs text-muted-foreground">Order created</p>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <code className="text-xs">order.pending</code>
+                      <p className="text-xs text-muted-foreground">Awaiting provider</p>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <code className="text-xs">order.validated</code>
+                      <p className="text-xs text-muted-foreground">Ready for settlement</p>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <code className="text-xs">order.settled</code>
+                      <p className="text-xs text-muted-foreground">Payment complete</p>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <code className="text-xs">order.refunded</code>
+                      <p className="text-xs text-muted-foreground">Refunded to sender</p>
+                    </div>
+                    <div className="bg-muted/50 rounded p-2">
+                      <code className="text-xs">order.expired</code>
+                      <p className="text-xs text-muted-foreground">Order timed out</p>
+                    </div>
+                  </div>
+                  <div className="bg-slate-900 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-2">Webhook Payload Example:</p>
+                    <pre className="text-xs text-slate-100 overflow-x-auto">{`{
+  "event": "order.settled",
+  "orderId": "offramp_1701234567890_abc123",
+  "status": "settled",
+  "timestamp": "2024-01-15T10:32:00Z",
+  "data": {
+    "txHash": "0x1234567890abcdef...",
+    "settlementAmount": "158050.00",
+    "currency": "NGN"
+  }
+}`}</pre>
+                  </div>
+                </div>
+
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

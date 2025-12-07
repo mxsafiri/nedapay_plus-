@@ -279,7 +279,7 @@ export default function DocsPage() {
   "toCurrency": "NGN",
   "network": "base",
   "recipientDetails": {
-    "institution": "ABNGNGLA",
+    "bankCode": "ABNGNGLA",
     "accountNumber": "0123456789",
     "accountName": "John Doe",
     "memo": "Payment for services"
@@ -298,7 +298,7 @@ export default function DocsPage() {
   "toCurrency": "NGN",
   "network": "base",
   "recipientDetails": {
-    "institution": "ABNGNGLA",
+    "bankCode": "ABNGNGLA",
     "accountNumber": "0123456789",
     "accountName": "John Doe",
     "memo": "Payment for services"
@@ -355,7 +355,7 @@ export default function DocsPage() {
     toCurrency: 'NGN',
     network: 'base',
     recipientDetails: {
-      institution: 'ABNGNGLA',
+      bankCode: 'ABNGNGLA',
       accountNumber: '0123456789',
       accountName: 'John Doe',
       memo: 'Payment for services'
@@ -386,7 +386,7 @@ if (result.success) {
     toCurrency: 'NGN',
     network: 'base',
     recipientDetails: {
-      institution: 'ABNGNGLA',
+      bankCode: 'ABNGNGLA',
       accountNumber: '0123456789',
       accountName: 'John Doe',
       memo: 'Payment for services'
