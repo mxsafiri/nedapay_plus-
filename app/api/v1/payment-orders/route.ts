@@ -14,6 +14,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+// Helper to create JSON response with CORS headers
+function jsonResponse(data: any, status: number = 200) {
+  return NextResponse.json(data, { status, headers: corsHeaders });
+}
+
 // Handle CORS preflight requests
 export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders });
@@ -165,10 +170,7 @@ export async function POST(request: NextRequest) {
     // Authenticate
     const auth = await authenticateRequest(request);
     if (!auth.authenticated) {
-      return NextResponse.json(
-        { success: false, error: auth.error },
-        { status: 401 }
-      );
+      return jsonResponse({ success: false, error: auth.error }, 401);
     }
 
     const { user, senderProfile, isTestMode } = auth;
@@ -176,25 +178,16 @@ export async function POST(request: NextRequest) {
     console.log(`🔧 Test Mode: ${isTestMode ? 'ON' : 'OFF'}`);
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication failed' },
-        { status: 401 }
-      );
+      return jsonResponse({ success: false, error: 'Authentication failed' }, 401);
     }
 
     // Only senders can create off-ramp orders
     if (user.scope.toLowerCase() !== 'sender') {
-      return NextResponse.json(
-        { success: false, error: 'Only senders can create off-ramp orders' },
-        { status: 403 }
-      );
+      return jsonResponse({ success: false, error: 'Only senders can create off-ramp orders' }, 403);
     }
 
     if (!senderProfile) {
-      return NextResponse.json(
-        { success: false, error: 'Sender profile not found. Please complete onboarding.' },
-        { status: 400 }
-      );
+      return jsonResponse({ success: false, error: 'Sender profile not found. Please complete onboarding.' }, 400);
     }
 
     // Parse request body
@@ -219,52 +212,40 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!amount || !toCurrency || !bankCode || !accountNumber || !accountName) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Missing required fields',
-          required: {
-            amount: 'USDC/USDT amount (e.g., 100)',
-            token: 'USDC or USDT (optional, defaults to USDC)',
-            toCurrency: 'Destination currency (e.g., NGN, KES, TZS)',
-            recipientDetails: {
-              bankCode: 'Bank code (e.g., GTB, CRDB)',
-              accountNumber: 'Recipient account number',
-              accountName: 'Recipient account name',
-              memo: 'Optional payment memo'
-            }
+      return jsonResponse({ 
+        success: false, 
+        error: 'Missing required fields',
+        required: {
+          amount: 'USDC/USDT amount (e.g., 100)',
+          token: 'USDC or USDT (optional, defaults to USDC)',
+          toCurrency: 'Destination currency (e.g., NGN, KES, TZS)',
+          recipientDetails: {
+            bankCode: 'Bank code (e.g., GTB, CRDB)',
+            accountNumber: 'Recipient account number',
+            accountName: 'Recipient account name',
+            memo: 'Optional payment memo'
           }
-        },
-        { status: 400 }
-      );
+        }
+      }, 400);
     }
 
     if (amount <= 0) {
-      return NextResponse.json(
-        { success: false, error: 'Amount must be greater than 0' },
-        { status: 400 }
-      );
+      return jsonResponse({ success: false, error: 'Amount must be greater than 0' }, 400);
     }
 
     if (!['USDC', 'USDT'].includes(token.toUpperCase())) {
-      return NextResponse.json(
-        { success: false, error: 'Only USDC and USDT tokens supported' },
-        { status: 400 }
-      );
+      return jsonResponse({ success: false, error: 'Only USDC and USDT tokens supported' }, 400);
     }
 
     // Check Paycrest support
     const paycrest = getPaycrestService();
     
     if (!paycrest.isCurrencySupported(toCurrency)) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: `Currency ${toCurrency} not supported`,
-          supportedCurrencies: paycrest.getSupportedCurrencies()
-        },
-        { status: 400 }
-      );
+      return jsonResponse({ 
+        success: false, 
+        error: `Currency ${toCurrency} not supported`,
+        supportedCurrencies: paycrest.getSupportedCurrencies()
+      }, 400);
     }
 
     console.log(`✅ ${toCurrency} supported by Paycrest`);
@@ -279,10 +260,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!validation.valid) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid recipient details', details: validation.errors },
-        { status: 400 }
-      );
+      return jsonResponse({ success: false, error: 'Invalid recipient details', details: validation.errors }, 400);
     }
 
     // Calculate fees
@@ -303,10 +281,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!tokenRecord) {
-      return NextResponse.json(
-        { success: false, error: `${token} token not configured in system` },
-        { status: 500 }
-      );
+      return jsonResponse({ success: false, error: `${token} token not configured in system` }, 500);
     }
 
     // Create order ID
@@ -477,7 +452,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Success response
-      return NextResponse.json({
+      return jsonResponse({
         success: true,
         orderId: order.id,
         status: 'processing',
@@ -525,24 +500,21 @@ export async function POST(request: NextRequest) {
         console.error('Failed to update order status:', dbError);
       }
 
-      return NextResponse.json({
+      return jsonResponse({
         success: false,
         error: 'Off-ramp fulfillment failed',
         details: paycrestError.message,
         orderId: orderId
-      }, { status: 500 });
+      }, 500);
     }
 
   } catch (error: any) {
     console.error('❌ Error creating off-ramp order:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to create off-ramp order',
-        details: error.message
-      },
-      { status: 500 }
-    );
+    return jsonResponse({ 
+      success: false, 
+      error: 'Failed to create off-ramp order',
+      details: error.message
+    }, 500);
   }
 }
 
@@ -559,19 +531,13 @@ export async function GET(request: NextRequest) {
     // Authenticate
     const auth = await authenticateRequest(request);
     if (!auth.authenticated) {
-      return NextResponse.json(
-        { success: false, error: auth.error },
-        { status: 401 }
-      );
+      return jsonResponse({ success: false, error: auth.error }, 401);
     }
 
     const { user, senderProfile, providerProfile, isTestMode } = auth;
 
     if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication failed' },
-        { status: 401 }
-      );
+      return jsonResponse({ success: false, error: 'Authentication failed' }, 401);
     }
 
     console.log(`📊 Listing orders for ${user.scope} (Test Mode: ${isTestMode})`);
@@ -620,7 +586,7 @@ export async function GET(request: NextRequest) {
 
       console.log(`✅ Found ${orders.length} orders for sender ${senderProfile?.id}`);
 
-      return NextResponse.json({
+      return jsonResponse({
         success: true,
         orders: orders.map(order => ({
           orderId: order.id,
@@ -693,7 +659,7 @@ export async function GET(request: NextRequest) {
 
       console.log(`✅ Found ${orders.length} orders assigned to provider ${providerProfile?.id}`);
 
-      return NextResponse.json({
+      return jsonResponse({
         success: true,
         orders: orders.map(order => ({
           orderId: order.id,
@@ -732,21 +698,15 @@ export async function GET(request: NextRequest) {
 
     } else {
       // Other roles can't list orders via this API
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized: Only senders and providers can list orders' },
-        { status: 403 }
-      );
+      return jsonResponse({ success: false, error: 'Unauthorized: Only senders and providers can list orders' }, 403);
     }
 
   } catch (error) {
     console.error('❌ Error listing payment orders:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Failed to list payment orders',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    );
+    return jsonResponse({ 
+      success: false, 
+      error: 'Failed to list payment orders',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
   }
 }
