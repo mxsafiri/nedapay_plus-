@@ -69,15 +69,17 @@ export class PaycrestService {
   private baseUrl: string;
 
   constructor() {
-    // Support both naming conventions
-    this.clientSecret = process.env.PAYCREST_CLIENT_SECRET || process.env.PAYCREST_API_KEY!;
+    // Support multiple naming conventions - Paycrest uses "API Key" (which is their Client ID)
+    // NOT the Client Secret (which is for webhook verification)
+    this.clientSecret = process.env.PAYCREST_CLIENT_ID || process.env.PAYCREST_API_KEY || process.env.PAYCREST_CLIENT_SECRET!;
     this.baseUrl = PAYCREST_API_BASE;
     
     if (!this.clientSecret) {
-      throw new Error('PAYCREST_CLIENT_SECRET not configured in environment variables. Get your client secret from app.paycrest.io dashboard.');
+      throw new Error('PAYCREST_CLIENT_ID not configured. Get your API Key (Client ID) from app.paycrest.io dashboard.');
     }
 
     console.log(`✅ Paycrest initialized with API base: ${this.baseUrl}`);
+    console.log(`   Using API Key: ${this.clientSecret.substring(0, 8)}...`);
   }
 
   /**
