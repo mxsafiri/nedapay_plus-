@@ -164,6 +164,7 @@ async function assignPSP(_toCurrency: string, _amount: number) {
  * - Stablecoin remittance services
  */
 export async function POST(request: NextRequest) {
+  // Safety wrapper to ensure we always return JSON with CORS headers
   try {
     console.log('📥 Stablecoin Off-Ramp API - Received request');
 
@@ -191,21 +192,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Parse request body
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      return jsonResponse({ success: false, error: 'Invalid JSON in request body' }, 400);
+    }
+    
     const {
       amount,              // USDC/USDT amount
       token = 'USDC',      // Default to USDC
       toCurrency,          // Destination currency (NGN, KES, TZS, etc.)
-      recipientDetails: {
-        bankCode: bodyBankCode,
-        institution,       // Accept 'institution' as alias for 'bankCode'
-        accountNumber,
-        accountName,
-        memo
-      } = {},
+      recipientDetails = {},
       reference,
       webhookUrl
-    } = body;
+    } = body || {};
+    
+    const {
+      bankCode: bodyBankCode,
+      institution,       // Accept 'institution' as alias for 'bankCode'
+      accountNumber,
+      accountName,
+      memo
+    } = recipientDetails;
 
     // Accept either bankCode or institution
     const bankCode = bodyBankCode || institution;

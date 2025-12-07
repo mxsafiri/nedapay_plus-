@@ -101,9 +101,17 @@ export class PaycrestService {
         }
       );
 
-      const rate = response.data.data;
+      console.log(`📊 Paycrest rate response:`, JSON.stringify(response.data, null, 2));
+      
+      // Handle different response structures
+      const rate = response.data?.data || response.data;
+      
+      if (!rate || !rate.rate) {
+        throw new Error(`Invalid rate response from Paycrest: ${JSON.stringify(response.data)}`);
+      }
+      
       console.log(`💱 Rate: 1 ${token} = ${rate.rate} ${toCurrency}`);
-      console.log(`💰 Estimated payout: ${rate.estimatedPayout} ${toCurrency}`);
+      console.log(`💰 Estimated payout: ${rate.estimatedPayout || 'N/A'} ${toCurrency}`);
 
       return rate;
     } catch (error) {
