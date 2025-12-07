@@ -178,9 +178,12 @@ export class PaycrestService {
       return order;
     } catch (error) {
       const axiosError = error as AxiosError<any>;
-      console.error('❌ Paycrest order creation error:', axiosError.response?.data || axiosError.message);
+      console.error('❌ Paycrest order creation error:');
+      console.error('   Status:', axiosError.response?.status);
+      console.error('   Data:', JSON.stringify(axiosError.response?.data, null, 2));
+      console.error('   Message:', axiosError.message);
       throw new Error(
-        `Failed to create Paycrest order: ${axiosError.response?.data?.message || axiosError.message}`
+        `Failed to create Paycrest order: ${axiosError.response?.data?.message || axiosError.response?.data?.error || axiosError.message}`
       );
     }
   }

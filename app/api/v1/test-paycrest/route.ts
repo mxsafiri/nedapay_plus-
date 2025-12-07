@@ -61,10 +61,39 @@ export async function GET(request: NextRequest) {
       currency
     );
 
+    // Check if we should test order creation
+    const testOrder = searchParams.get('testOrder') === 'true';
+    let orderResult = null;
+    
+    if (testOrder) {
+      console.log('   📤 Testing order creation...');
+      try {
+        orderResult = await paycrest.createOrder({
+          amount: amount,
+          token: token.toUpperCase() as 'USDC' | 'USDT',
+          network: 'base',
+          rate: rate.rate,
+          recipient: {
+            institution: 'ABNGNGLA',
+            accountIdentifier: '0123456789',
+            accountName: 'Test User',
+            currency: currency,
+            memo: 'Test order'
+          },
+          reference: `test_${Date.now()}`,
+          returnAddress: process.env.BASE_TREASURY_ADDRESS || '0x0000000000000000000000000000000000000000'
+        });
+        console.log('   ✅ Order created:', orderResult);
+      } catch (orderError: any) {
+        orderResult = { error: orderError.message };
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Paycrest connection working!',
       rate: rate,
+      orderTest: orderResult,
       envCheck: {
         PAYCREST_CLIENT_SECRET: !!process.env.PAYCREST_CLIENT_SECRET,
         BASE_TREASURY_ADDRESS: !!process.env.BASE_TREASURY_ADDRESS,
