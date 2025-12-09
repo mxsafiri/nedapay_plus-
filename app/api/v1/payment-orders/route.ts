@@ -400,57 +400,20 @@ export async function POST(request: NextRequest) {
           paycrest_order_id: paycrestOrder.id,
           receive_address_text: paycrestOrder.receiveAddress,
           paycrest_valid_until: new Date(paycrestOrder.validUntil),
-          status: 'confirmed',
-          updated_at: new Date()
-        }
-      });
-
-      // Step 5: Send USDC on Base chain to Paycrest
-      console.log(`💸 Sending ${token} on Base to Paycrest...`);
-      
-      // Get Base network
-      const networkSelector = getNetworkSelector();
-      const baseNetwork = await networkSelector.getNetworkByIdentifier('base');
-
-      if (!baseNetwork) {
-        throw new Error('Base network not configured. Please contact support.');
-      }
-
-      const baseService = createEVMService(baseNetwork);
-
-      const txResult = await baseService.transferToken({
-        tokenAddress: tokenRecord.contract_address,
-        from: process.env.BASE_TREASURY_ADDRESS!,
-        to: paycrestOrder.receiveAddress,
-        amount: BigInt(Math.floor(parseFloat(amount) * 1_000_000)) // USDC has 6 decimals
-      });
-
-      if (!txResult.success) {
-        throw new Error(`Base transfer failed: ${txResult.error}`);
-      }
-
-      console.log(`✅ ${token} sent on Base: ${txResult.transactionHash}`);
-
-      // Step 6: Update order with transaction details
-      await prisma.payment_orders.update({
-        where: { id: orderId },
-        data: {
-          status: 'processing',
-          tx_hash: txResult.transactionHash,
-          tx_id: txResult.transactionId,
+          status: 'awaiting_deposit',
           network_used: 'base',
           updated_at: new Date()
         }
       });
 
-      // Step 7: Log transaction
+      // Log the order creation
       await prisma.transaction_logs.create({
         data: {
-          id: `paycrest_offramp_${orderId}_${Date.now()}`,
+          id: `paycrest_order_${orderId}_${Date.now()}`,
           payment_order_transactions: orderId,
-          tx_hash: txResult.transactionHash!,
+          tx_hash: paycrestOrder.id, // Use Paycrest order ID as reference
           network: 'base',
-          status: 'paycrest_initiated',
+          status: 'awaiting_deposit',
           metadata: {
             type: 'paycrest_offramp',
             paycrest_order_id: paycrestOrder.id,
@@ -462,28 +425,28 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      console.log(`✅ Off-ramp order processing via Paycrest`);
+      console.log(`✅ Off-ramp order created - awaiting user deposit to: ${paycrestOrder.receiveAddress}`);
 
-      // Step 8: Send webhook to sender (if configured)
+      // Step 5: Send webhook to sender (if configured)
       if (webhookUrl) {
         sendOrderWebhookToSender(webhookUrl, {
           orderId: order.id,
-          status: 'processing',
+          status: 'awaiting_deposit',
           fromAmount: amount,
           fromCurrency: token,
           toAmount: parseFloat(estimatedPayout),
           toCurrency: toCurrency,
           reference: reference,
-          txHash: txResult.transactionHash,
+          depositAddress: paycrestOrder.receiveAddress,
           networkUsed: 'base'
         }).catch(err => console.error('Webhook delivery failed:', err));
       }
 
-      // Success response
+      // Success response - return deposit address for user to send USDC
       return jsonResponse({
         success: true,
         orderId: order.id,
-        status: 'processing',
+        status: 'awaiting_deposit',
         fromAmount: amount,
         fromCurrency: token,
         toAmount: parseFloat(estimatedPayout),
@@ -496,20 +459,25 @@ export async function POST(request: NextRequest) {
           networkFee: transactionFee,
           totalFees: senderMarkup + platformFee + senderFee + transactionFee
         },
-        paycrest: {
-          orderId: paycrestOrder.id,
-          receiveAddress: paycrestOrder.receiveAddress,
+        deposit: {
+          address: paycrestOrder.receiveAddress,
+          network: 'base',
+          token: token,
+          amount: amount,
           validUntil: paycrestOrder.validUntil
         },
-        blockchain: {
-          network: 'base',
-          transactionHash: txResult.transactionHash
+        recipient: {
+          bankCode: bankCode,
+          accountNumber: accountNumber,
+          accountName: accountName,
+          currency: toCurrency
         },
-        estimatedCompletion: '1-2 minutes',
+        paycrestOrderId: paycrestOrder.id,
+        estimatedCompletion: '1-2 minutes after deposit',
         createdAt: order.created_at.toISOString(),
-        reference: reference || null,
+        reference: reference || orderReference,
         testMode: isTestMode,
-        message: 'Off-ramp order created successfully. Fiat will be delivered to recipient bank account within 1-2 minutes.'
+        message: `Order created! Send exactly ${amount} ${token} to the deposit address on Base network. Fiat will be delivered to recipient within 1-2 minutes after deposit is confirmed.`
       });
 
     } catch (paycrestError: any) {

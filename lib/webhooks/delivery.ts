@@ -13,6 +13,7 @@ export interface WebhookPayload {
   txHash?: string;
   txId?: string;
   networkUsed?: string;
+  depositAddress?: string;
   completedAt?: string;
   reference?: string;
   timestamp: string;
@@ -133,6 +134,7 @@ export async function sendOrderWebhookToSender(
     txHash?: string;
     txId?: string;
     networkUsed?: string;
+    depositAddress?: string;
     completedAt?: Date;
     reference?: string;
   },
