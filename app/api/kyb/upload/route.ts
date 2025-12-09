@@ -24,9 +24,10 @@ export async function POST(request: NextRequest) {
     const dataProtectionPolicy = formData.get('dataProtectionPolicy') as File | null;
     const supportedCountriesStr = formData.get('supportedCountries') as string | null;
 
-    if (!incorporation || !license || !shareholderDeclaration || !amlPolicy || !dataProtectionPolicy) {
+    // Only incorporation and license are required, others are optional
+    if (!incorporation || !license) {
       return NextResponse.json(
-        { error: 'All 5 documents are required: Certificate of Incorporation, Business License, Shareholder Declaration, AML Policy, and Data Protection Policy' },
+        { error: 'Certificate of Incorporation and Business License are required' },
         { status: 400 }
       );
     }
@@ -85,13 +86,21 @@ export async function POST(request: NextRequest) {
       return publicUrl;
     };
 
-    // Upload all documents
+    // Upload all documents (only upload if file exists)
     try {
       documents.incorporation = await uploadFile(incorporation, 'incorporation');
       documents.license = await uploadFile(license, 'license');
-      documents.shareholderDeclaration = await uploadFile(shareholderDeclaration, 'shareholder-declaration');
-      documents.amlPolicy = await uploadFile(amlPolicy, 'aml-policy');
-      documents.dataProtectionPolicy = await uploadFile(dataProtectionPolicy, 'data-protection-policy');
+      
+      // Optional documents - only upload if provided
+      if (shareholderDeclaration) {
+        documents.shareholderDeclaration = await uploadFile(shareholderDeclaration, 'shareholder-declaration');
+      }
+      if (amlPolicy) {
+        documents.amlPolicy = await uploadFile(amlPolicy, 'aml-policy');
+      }
+      if (dataProtectionPolicy) {
+        documents.dataProtectionPolicy = await uploadFile(dataProtectionPolicy, 'data-protection-policy');
+      }
     } catch (uploadError) {
       console.error('❌ File upload error:', uploadError);
       throw uploadError;
