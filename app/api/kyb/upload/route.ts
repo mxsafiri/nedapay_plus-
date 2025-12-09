@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserFromRequest } from '@/lib/auth/server';
+import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 import crypto from 'crypto';
 import { sendAdminKYBNotification } from '@/lib/email';
 import { createClient } from '@supabase/supabase-js';
@@ -8,10 +9,42 @@ import { createClient } from '@supabase/supabase-js';
 // POST - Upload KYB documents
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request);
+    // Try auth header first, then fall back to Supabase session
+    let user = await getUserFromRequest(request);
+    
+    if (!user) {
+      // Try Supabase session from cookies
+      try {
+        const supabaseAuth = await createSupabaseServerClient();
+        const { data: { user: supabaseUser } } = await supabaseAuth.auth.getUser();
+        
+        if (supabaseUser) {
+          // Get user from our database using supabase user ID
+          user = await prisma.users.findFirst({
+            where: { 
+              OR: [
+                { id: supabaseUser.id },
+                { email: supabaseUser.email }
+              ]
+            },
+            select: {
+              id: true,
+              email: true,
+              first_name: true,
+              last_name: true,
+              scope: true,
+              kyb_verification_status: true,
+              has_early_access: true,
+            }
+          });
+        }
+      } catch (sessionError) {
+        console.error('Session check error:', sessionError);
+      }
+    }
 
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized - please log in' }, { status: 401 });
     }
 
     console.log('📤 KYB Upload - User authenticated:', { id: user.id, email: user.email });
