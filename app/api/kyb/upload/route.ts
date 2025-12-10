@@ -6,6 +6,11 @@ import crypto from 'crypto';
 import { sendAdminKYBNotification } from '@/lib/email';
 import { createClient } from '@supabase/supabase-js';
 
+// Route segment config for App Router
+export const runtime = 'nodejs';
+export const maxDuration = 60; // Allow up to 60 seconds for large uploads
+export const dynamic = 'force-dynamic';
+
 // POST - Upload KYB documents
 export async function POST(request: NextRequest) {
   try {

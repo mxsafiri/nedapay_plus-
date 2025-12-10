@@ -275,56 +275,77 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
 
     setIsUpdating(true);
     try {
-      const formData = new FormData();
-      // Non-null assertions are safe here because we validated above
-      formData.append('incorporation', kybFiles.incorporation!);
-      formData.append('license', kybFiles.license!);
-      formData.append('shareholderDeclaration', kybFiles.shareholderDeclaration!);
-      formData.append('amlPolicy', kybFiles.amlPolicy!);
-      formData.append('dataProtectionPolicy', kybFiles.dataProtectionPolicy!);
+      console.log('📤 Starting KYB document upload...');
 
-      console.log('📤 Submitting KYB documents...');
+      // Step 1: Prepare document metadata for signed URLs
+      const documents = Object.entries(kybFiles)
+        .filter(([_, file]) => file !== null)
+        .map(([type, file]) => ({
+          type,
+          fileName: file!.name,
+          contentType: file!.type
+        }));
 
-      const response = await fetch('/api/kyb/upload', {
+      // Step 2: Get signed upload URLs (bypasses Vercel's 4.5MB limit)
+      console.log('📝 Getting signed upload URLs...');
+      const urlResponse = await fetch('/api/kyb/upload-url', {
         method: 'POST',
         headers: {
-          'x-user-id': user.id, // Send user ID for custom auth
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
         },
-        body: formData,
+        body: JSON.stringify({ documents }),
       });
 
-      console.log('Response status:', response.status);
-
-      if (!response.ok) {
-        console.error('❌ Response not OK:', response.status, response.statusText);
-
-        let error: any = null;
-        let errorMessage = 'Failed to upload documents';
-
-        try {
-          const text = await response.text();
-
-          try {
-            // Try to parse JSON first
-            error = JSON.parse(text);
-          } catch {
-            // Not JSON, use raw text as message
-            error = { error: text };
-          }
-
-          console.error('❌ Upload error payload:', error);
-          errorMessage =
-            (error && (error.details || error.error || error.message)) ||
-            `Server error: ${response.status} ${response.statusText}`;
-        } catch (parseError) {
-          console.error('❌ Could not read error response:', parseError);
-          errorMessage = `Server error: ${response.status} ${response.statusText}`;
-        }
-
-        throw new Error(errorMessage);
+      if (!urlResponse.ok) {
+        const error = await urlResponse.json().catch(() => ({ error: 'Failed to get upload URLs' }));
+        throw new Error(error.error || 'Failed to get upload URLs');
       }
 
-      const _result = await response.json();
+      const { uploadUrls } = await urlResponse.json();
+      console.log('✅ Got signed upload URLs');
+
+      // Step 3: Upload each file directly to Supabase Storage
+      const filePaths: Record<string, string> = {};
+      
+      for (const [docType, file] of Object.entries(kybFiles)) {
+        if (file && uploadUrls[docType]) {
+          console.log(`📤 Uploading ${docType}...`);
+          
+          const uploadResponse = await fetch(uploadUrls[docType].uploadUrl, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': file.type,
+            },
+            body: file,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Failed to upload ${docType}: ${uploadResponse.statusText}`);
+          }
+
+          filePaths[docType] = uploadUrls[docType].filePath;
+          console.log(`✅ ${docType} uploaded`);
+        }
+      }
+
+      // Step 4: Finalize KYB submission
+      console.log('📝 Finalizing KYB submission...');
+      const finalizeResponse = await fetch('/api/kyb/finalize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-id': user.id,
+        },
+        body: JSON.stringify({ filePaths }),
+      });
+
+      if (!finalizeResponse.ok) {
+        const error = await finalizeResponse.json().catch(() => ({ error: 'Failed to finalize submission' }));
+        throw new Error(error.error || error.details || 'Failed to finalize submission');
+      }
+
+      console.log('✅ KYB submission complete');
       toast.success("Documents uploaded successfully! Verification in progress.");
       
       // Refresh KYB status
