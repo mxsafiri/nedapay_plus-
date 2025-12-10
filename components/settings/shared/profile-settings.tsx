@@ -296,9 +296,32 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
       console.log('Response status:', response.status);
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error('❌ Upload error:', error);
-        throw new Error(error.error || error.details || 'Failed to upload documents');
+        console.error('❌ Response not OK:', response.status, response.statusText);
+
+        let error: any = null;
+        let errorMessage = 'Failed to upload documents';
+
+        try {
+          const text = await response.text();
+
+          try {
+            // Try to parse JSON first
+            error = JSON.parse(text);
+          } catch {
+            // Not JSON, use raw text as message
+            error = { error: text };
+          }
+
+          console.error('❌ Upload error payload:', error);
+          errorMessage =
+            (error && (error.details || error.error || error.message)) ||
+            `Server error: ${response.status} ${response.statusText}`;
+        } catch (parseError) {
+          console.error('❌ Could not read error response:', parseError);
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
       }
 
       const _result = await response.json();
