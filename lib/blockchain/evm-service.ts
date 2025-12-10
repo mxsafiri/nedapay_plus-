@@ -4,7 +4,7 @@
  */
 
 import { ethers } from 'ethers';
-import type { NetworkInfo, TokenInfo } from './network-selector';
+import type { NetworkInfo } from './network-selector';
 
 // Standard ERC-20 ABI (minimal, just what we need)
 const ERC20_ABI = [

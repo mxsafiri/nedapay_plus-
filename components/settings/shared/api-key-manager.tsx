@@ -152,7 +152,7 @@ export function ApiKeyManager({ user, apiKeys: initialApiKeys, kybStatus }: ApiK
   };
 
   const isVerified = kybStatus === 'verified';
-  const isPending = kybStatus === 'pending';
+  const _isPending = kybStatus === 'pending';
 
   const getStatusBanner = () => {
     if (isVerified) return null;

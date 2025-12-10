@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowRight, Globe, Zap, Shield } from 'lucide-react';
+import { ArrowRight, Globe, Shield } from 'lucide-react';
 
 export default function HeroSection() {
   return (

@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
  * GET /api/v1/sender/stats
  * Get sender dashboard statistics
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get user from session (you'll need to add auth here)
     // For now, get stats for all orders

@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { getTransactionRouter } from '@/lib/blockchain/transaction-router';
+import crypto from 'crypto';
 
 export interface SettlementResult {
   success: boolean;
@@ -123,7 +124,7 @@ export async function settleProviderOrder(orderId: string): Promise<SettlementRe
     // Log settlement transaction
     await prisma.transaction_logs.create({
       data: {
-        id: `settlement-${orderId}-${Date.now()}`,
+        id: crypto.randomUUID(),
         payment_order_transactions: orderId,
         tx_hash: result.transactionId,
         network: result.networkUsed,

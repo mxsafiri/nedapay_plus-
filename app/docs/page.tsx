@@ -54,7 +54,7 @@ export default function PublicDocsLanding() {
     },
   ];
 
-  const steps = [
+  const _steps = [
     {
       step: "Step 1",
       title: "Create an account & complete KYB",

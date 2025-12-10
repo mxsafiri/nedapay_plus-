@@ -3,6 +3,7 @@
 // Uses Prisma for database operations
 
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 import { createAdminClient } from '@/lib/supabase/admin';
 import type { 
   AdminDashboardStats,
@@ -254,7 +255,7 @@ export async function updateUserVerificationStatus(
     // Log the admin action in transaction_logs
     await prisma.transaction_logs.create({
       data: {
-        id: `txlog_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: crypto.randomUUID(),
         status: 'order_initiated',
         metadata: {
           action_type: status === 'verified' ? 'verify_user' : 'reject_user',

@@ -14,8 +14,6 @@ import {
   Shield,
   BookOpen,
   ArrowRight,
-  ExternalLink,
-  Sparkles,
   Globe,
   Network,
   Layers
@@ -100,7 +98,7 @@ export default function DocsV2Page() {
                 </div>
                 <nav className="space-y-2">
                   {steps.map((step, index) => {
-                    const Icon = step.icon;
+                    const _Icon = step.icon;
                     const isCompleted = completedSteps.includes(step.id);
                     const isCurrent = currentStep === step.id;
 
@@ -276,7 +274,7 @@ export default function DocsV2Page() {
                             <div className="flex-1">
                               <div className="font-medium text-sm mb-1">Generate Key</div>
                               <p className="text-xs text-muted-foreground">
-                                Click "Create API Key" and choose between Test (sandbox) or Live (production) mode
+                                Click &quot;Create API Key&quot; and choose between Test (sandbox) or Live (production) mode
                               </p>
                             </div>
                           </div>
@@ -288,7 +286,7 @@ export default function DocsV2Page() {
                             <div className="flex-1">
                               <div className="font-medium text-sm mb-1">Save Securely</div>
                               <p className="text-xs text-muted-foreground">
-                                Copy and store your API key securely. You won't be able to see it again!
+                                Copy and store your API key securely. You will not be able to see it again!
                               </p>
                             </div>
                           </div>
@@ -301,7 +299,7 @@ export default function DocsV2Page() {
                           <div>
                             <div className="font-semibold text-sm text-blue-900 dark:text-blue-300 mb-1">Pro Tip</div>
                             <p className="text-xs text-blue-800 dark:text-blue-400">
-                              Start with a Test API key (np_test_*) to safely experiment without affecting real transactions. Switch to Live keys (np_live_*) when you're ready for production.
+                              Start with a Test API key (np_test_*) to safely experiment without affecting real transactions. Switch to Live keys (np_live_*) when you are ready for production.
                             </p>
                           </div>
                         </div>
@@ -474,7 +472,7 @@ export default function DocsV2Page() {
                       </div>
 
                       <p className="text-sm text-emerald-800 dark:text-emerald-400 mb-4">
-                        You're all set! Generate a Live API key (np_live_*) and start processing real payments.
+                        You are all set! Generate a Live API key (np_live_*) and start processing real payments.
                       </p>
 
                       <Button className="w-full bg-emerald-600 hover:bg-emerald-700" asChild>

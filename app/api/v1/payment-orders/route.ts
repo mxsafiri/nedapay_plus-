@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendOrderWebhookToSender } from '@/lib/webhooks/delivery';
 import { prisma } from '@/lib/prisma';
-import { MockBlockchainService, shouldUseMockService } from '@/lib/blockchain/mock-service';
 import { getPaycrestService } from '@/lib/offramp/paycrest-service';
-import { createEVMService } from '@/lib/blockchain/evm-service';
-import { getNetworkSelector } from '@/lib/blockchain/network-selector';
 import crypto from 'crypto';
 
 // CORS headers for API access
@@ -126,8 +123,8 @@ async function authenticateRequest(request: NextRequest) {
   }
 }
 
-// Get available PSP for order fulfillment
-async function assignPSP(_toCurrency: string, _amount: number) {
+// Get available PSP for order fulfillment (reserved for future use)
+async function _assignPSP(_toCurrency: string, _amount: number) {
   try {
     // Find active PSPs that support the destination currency
     const providers = await prisma.provider_profiles.findMany({
@@ -195,7 +192,7 @@ export async function POST(request: NextRequest) {
     let body;
     try {
       body = await request.json();
-    } catch (parseError) {
+    } catch (_parseError) {
       return jsonResponse({ success: false, error: 'Invalid JSON in request body' }, 400);
     }
     
@@ -409,7 +406,7 @@ export async function POST(request: NextRequest) {
       // Log the order creation
       await prisma.transaction_logs.create({
         data: {
-          id: `paycrest_order_${orderId}_${Date.now()}`,
+          id: crypto.randomUUID(),
           payment_order_transactions: orderId,
           tx_hash: paycrestOrder.id, // Use Paycrest order ID as reference
           network: 'base',

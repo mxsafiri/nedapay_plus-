@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import crypto from 'crypto';
 
 /**
  * POST /api/webhooks/paycrest
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
     // Log webhook event
     await prisma.transaction_logs.create({
       data: {
-        id: `paycrest_webhook_${order.id}_${Date.now()}`,
+        id: crypto.randomUUID(),
         payment_order_transactions: order.id,
         tx_hash: transactionHash || `paycrest_${event || status}`,
         network: 'paycrest',

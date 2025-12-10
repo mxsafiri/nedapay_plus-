@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         throw new Error('Storage bucket "kyb-documents" not found. Please create it in Supabase Dashboard (see SUPABASE_STORAGE_SETUP.md)');
       }
       
-      const { data, error } = await supabase.storage
+      const { data: _uploadData, error } = await supabase.storage
         .from('kyb-documents')
         .upload(filePath, fileBuffer, {
           contentType: file.type,
