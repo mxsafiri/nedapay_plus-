@@ -459,10 +459,10 @@ Content-Type: application/json
         {/* Personas */}
         <section className="space-y-6">
           <div className="flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50 sm:text-xl">
               Who NedaPay is for
             </h2>
-            <p className="max-w-xl text-xs text-slate-600 dark:text-slate-400">
+            <p className="max-w-xl text-xs text-slate-700 dark:text-slate-400">
               Start with the track that matches your role. The underlying APIs
               are the same; what changes is how you expose them to your
               customers and how revenue is shared.
@@ -473,20 +473,20 @@ Content-Type: application/json
             {personas.map((persona) => (
               <div
                 key={persona.id}
-                className="group flex h-full flex-col rounded-2xl border border-slate-800 bg-slate-900/40 p-4 transition hover:border-emerald-500/70 hover:bg-slate-900/70"
+                className="group flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-500/70 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/40 dark:hover:bg-slate-900"
               >
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/70 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-slate-300">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wide text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   {persona.badge}
                 </div>
-                <h3 className="text-sm font-semibold text-slate-50">
+                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                   {persona.title}
                 </h3>
-                <p className="mt-2 text-xs text-slate-400">{persona.description}</p>
-                <ul className="mt-3 space-y-1.5 text-[11px] text-slate-300">
+                <p className="mt-2 text-xs text-slate-700 dark:text-slate-400">{persona.description}</p>
+                <ul className="mt-3 space-y-1.5 text-[11px] text-slate-700 dark:text-slate-300">
                   {persona.bullets.map((item) => (
                     <li key={item} className="flex gap-2">
-                      <span className="mt-1 h-1 w-1 rounded-full bg-emerald-400" />
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-blue-500" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -511,10 +511,10 @@ Content-Type: application/json
         <section id="integration-steps" className="space-y-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-50 sm:text-xl">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50 sm:text-xl">
                 Step-by-step integration
               </h2>
-              <p className="max-w-xl pt-1 text-xs text-slate-600 dark:text-slate-400">
+              <p className="max-w-xl pt-1 text-xs text-slate-700 dark:text-slate-400">
                 Choose the track that matches your role. Each guide walks through
                 authentication, creating a payment order, handling webhooks, and
                 reconciling payouts across digital-asset tokens and fiat rails.
@@ -523,7 +523,7 @@ Content-Type: application/json
           </div>
 
           {/* Track tabs */}
-          <div className="inline-flex gap-2 rounded-full border border-slate-800 bg-slate-900/70 p-1 text-[11px] font-medium text-slate-300">
+          <div className="inline-flex gap-2 rounded-full border border-slate-200 bg-slate-50 p-1 text-[11px] font-medium text-slate-700 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-300">
             {personas.map((persona) => (
               <button
                 key={persona.id}
@@ -531,7 +531,7 @@ Content-Type: application/json
                 className={`rounded-full px-3 py-1 transition ${
                   activeTrack === persona.id
                     ? "bg-emerald-500 text-slate-950"
-                    : "bg-transparent text-slate-300 hover:bg-slate-800"
+                    : "bg-transparent text-slate-700 hover:bg-slate-100 dark:bg-transparent dark:text-slate-300 dark:hover:bg-slate-900"
                 }`}
               >
                 {persona.badge}
@@ -543,8 +543,8 @@ Content-Type: application/json
           <div className="grid gap-5 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1.1fr)]">
             <div className="space-y-4">
               {activeTrack === "banks" && (
-                <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-[11px] text-slate-200">
-                  <h3 className="text-sm font-semibold text-slate-50">
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[11px] text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                     Banks & Financial Institutions – server-side flow
                   </h3>
                   <ol className="list-decimal space-y-2 pl-4">
@@ -565,7 +565,7 @@ Content-Type: application/json
                       customer-facing channels and back-office systems.
                     </li>
                   </ol>
-                  <p className="pt-1 text-[10px] text-slate-400">
+                  <p className="pt-1 text-[10px] text-slate-700 dark:text-slate-400">
                     Example: initiate a cross-border payout from your bank backend.
                   </p>
                   <pre className="overflow-x-auto rounded-lg bg-slate-950/70 p-3 text-[10px] text-slate-100">
@@ -587,7 +587,7 @@ Content-Type: application/json
   "webhookUrl": "https://yourbank.com/nedapay/webhook"
 }`}
                   </pre>
-                  <p className="pt-1 text-[10px] text-slate-400">
+                  <p className="pt-1 text-[10px] text-slate-700 dark:text-slate-400">
                     NedaPay will route this order over the optimal rail – digital-asset
                     token off-ramp to fiat, or fiat corridors via partners covering 130+
                     countries – and push state changes to your webhook URL.
@@ -596,8 +596,8 @@ Content-Type: application/json
               )}
 
               {activeTrack === "fintechs" && (
-                <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-[11px] text-slate-200">
-                  <h3 className="text-sm font-semibold text-slate-50">
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[11px] text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                     Fintechs & Platforms – embedded payouts
                   </h3>
                   <ol className="list-decimal space-y-2 pl-4">
@@ -636,7 +636,7 @@ Content-Type: application/json
     "webhookUrl": "https://yourplatform.com/webhooks/nedapay"
   }'`}
                   </pre>
-                  <p className="pt-1 text-[10px] text-slate-400">
+                  <p className="pt-1 text-[10px] text-slate-700 dark:text-slate-400">
                     Use the webhook payloads to update balances, invoices, and payout
                     screens in your product.
                   </p>
@@ -644,8 +644,8 @@ Content-Type: application/json
               )}
 
               {activeTrack === "psps" && (
-                <div className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-[11px] text-slate-200">
-                  <h3 className="text-sm font-semibold text-slate-50">
+                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[11px] text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                     PSPs & Liquidity Providers – receiving order flow
                   </h3>
                   <ol className="list-decimal space-y-2 pl-4">
@@ -685,7 +685,7 @@ Authorization: Bearer YOUR_PROVIDER_KEY
   ]
 }`}
                   </pre>
-                  <p className="pt-1 text-[10px] text-slate-400">
+                  <p className="pt-1 text-[10px] text-slate-700 dark:text-slate-400">
                     As new fiat corridors are unlocked (including global networks
                     reaching 130+ countries), they appear here without changing the
                     integration surface.
@@ -695,8 +695,8 @@ Authorization: Bearer YOUR_PROVIDER_KEY
             </div>
 
             {/* Generic lifecycle / webhooks */}
-            <div className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-[11px] text-slate-200">
-              <h3 className="text-sm font-semibold text-slate-50">
+            <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-[11px] text-slate-800 dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                 Common lifecycle & webhook example
               </h3>
               <p className="text-[11px] text-slate-700 dark:text-slate-300">
@@ -731,19 +731,19 @@ Authorization: Bearer YOUR_PROVIDER_KEY
         </section>
 
         {/* Supported coverage */}
-        <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
+        <section className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/40">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-sm font-semibold text-slate-50 sm:text-base">
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
                 Supported countries & chains
               </h2>
-              <p className="max-w-2xl text-xs text-slate-600 dark:text-slate-400">
+              <p className="max-w-2xl text-xs text-slate-700 dark:text-slate-400">
                 This list is loaded live from NedaPay APIs. Do not hardcode supported coverage.
               </p>
             </div>
             <Link
               href="/protected/docs-v2"
-              className="inline-flex items-center gap-2 text-xs font-medium text-emerald-300 hover:text-emerald-200"
+              className="inline-flex items-center gap-2 text-xs font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200"
             >
               View full API docs
               <ArrowRight className="h-3.5 w-3.5" />
@@ -751,64 +751,65 @@ Authorization: Bearer YOUR_PROVIDER_KEY
           </div>
 
           {coverageError && (
-            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-xs text-rose-200">
+            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-xs text-rose-700 dark:text-rose-200">
               {coverageError}
             </div>
           )}
 
           <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4">
-              <p className="text-[11px] font-medium text-slate-200">Supported payout currencies</p>
-              <p className="mt-1 text-[11px] text-slate-400">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/30">
+              <p className="text-[11px] font-medium text-slate-900 dark:text-slate-200">Supported payout currencies</p>
+              <p className="mt-1 text-[11px] text-slate-700 dark:text-slate-400">
                 Lists the fiat currencies/countries you can pay out to.
               </p>
               <pre className="mt-3 overflow-x-auto rounded-lg bg-slate-950/70 p-3 text-[10px] text-slate-100">{`GET /api/v1/currencies`}</pre>
-              <div className="mt-3 space-y-1 text-[11px] text-slate-300">
+              <div className="mt-3 space-y-1 text-[11px] text-slate-700 dark:text-slate-300">
                 {coverageLoading ? (
-                  <p className="text-slate-400">Loading…</p>
+                  <p className="text-slate-700 dark:text-slate-400">Loading…</p>
                 ) : supportedCurrencies.length === 0 ? (
-                  <p className="text-slate-400">No currencies returned.</p>
+                  <p className="text-slate-700 dark:text-slate-400">No currencies returned.</p>
                 ) : (
                   supportedCurrencies.slice(0, 12).map((c) => (
                     <div key={c.code} className="flex items-center justify-between gap-3">
-                      <span className="truncate">
-                        <span className="mr-2">{c.flag || ""}</span>
-                        {c.name || c.country || c.code}
-                      </span>
-                      <span className="font-mono text-[10px] text-slate-200">{c.code}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs">{c.flag || ""}</span>
+                        <span className="font-mono">{c.code}</span>
+                        <span className="text-slate-700 dark:text-slate-400">{c.country}</span>
+                      </div>
+                      <span className="text-slate-700 dark:text-slate-400">{c.name}</span>
                     </div>
                   ))
                 )}
                 {!coverageLoading && supportedCurrencies.length > 12 && (
-                  <p className="pt-1 text-[10px] text-slate-500">
+                  <p className="pt-1 text-[10px] text-slate-700 dark:text-slate-500">
                     Showing 12 of {supportedCurrencies.length}. Query the endpoint for the full list.
                   </p>
                 )}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4">
-              <p className="text-[11px] font-medium text-slate-200">Supported blockchain networks</p>
-              <p className="mt-1 text-[11px] text-slate-400">
-                Lists enabled settlement networks (e.g., Base/EVM and Hedera).
+            <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950/30">
+              <p className="text-[11px] font-medium text-slate-900 dark:text-slate-200">Supported blockchain networks</p>
+              <p className="mt-1 text-[11px] text-slate-700 dark:text-slate-400">
+                Lists enabled settlement networks for token settlement.
               </p>
               <pre className="mt-3 overflow-x-auto rounded-lg bg-slate-950/70 p-3 text-[10px] text-slate-100">{`GET /api/networks`}</pre>
-              <div className="mt-3 space-y-1 text-[11px] text-slate-300">
+              <div className="mt-3 space-y-1 text-[11px] text-slate-700 dark:text-slate-300">
                 {coverageLoading ? (
-                  <p className="text-slate-400">Loading…</p>
+                  <p className="text-slate-700 dark:text-slate-400">Loading…</p>
                 ) : supportedNetworks.length === 0 ? (
-                  <p className="text-slate-400">No networks returned.</p>
+                  <p className="text-slate-700 dark:text-slate-400">No networks returned.</p>
                 ) : (
                   supportedNetworks.slice(0, 12).map((n) => (
-                    <div key={`${n.id}:${n.identifier}`} className="flex items-center justify-between gap-3">
-                      <span className="truncate">{n.identifier}</span>
-                      <span className="font-mono text-[10px] text-slate-200">
-                        {n.network_type}{n.is_testnet ? "-test" : ""}
+                    <div key={n.id} className="flex items-center justify-between gap-3">
+                      <span className="font-mono">{n.identifier}</span>
+                      <span className="text-[10px] text-slate-600 dark:text-slate-400">
+                        {n.is_testnet ? "testnet" : "mainnet"}
                       </span>
                     </div>
                   ))
                 )}
                 {!coverageLoading && supportedNetworks.length > 12 && (
-                  <p className="pt-1 text-[10px] text-slate-500">
+                  <p className="pt-1 text-[10px] text-slate-700 dark:text-slate-500">
                     Showing 12 of {supportedNetworks.length}. Query the endpoint for the full list.
                   </p>
                 )}
@@ -818,12 +819,12 @@ Authorization: Bearer YOUR_PROVIDER_KEY
         </section>
 
         {/* Deep docs CTA */}
-        <section className="mt-4 flex flex-col items-start justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 sm:flex-row sm:items-center">
+        <section className="mt-4 flex flex-col items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-900/50 sm:flex-row sm:items-center">
           <div className="space-y-1.5">
-            <h2 className="text-sm font-semibold text-slate-50 sm:text-base">
+            <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-50 sm:text-base">
               Ready for full API details?
             </h2>
-            <p className="max-w-xl text-xs text-slate-600 dark:text-slate-400">
+            <p className="max-w-xl text-xs text-slate-700 dark:text-slate-400">
               Log in to access the authenticated documentation, API reference,
               and live API playground. There you can generate API keys, test
               requests, and inspect responses in real time.
