@@ -259,6 +259,23 @@ export default function PublicDocsLanding() {
               }
             }
 
+            .hero-docs-heading {
+              opacity: 0;
+              transform: translateY(14px);
+              animation: hero-docs-slide-up 0.85s ease-out forwards;
+            }
+
+            @keyframes hero-docs-slide-up {
+              0% {
+                opacity: 0;
+                transform: translateY(18px);
+              }
+              100% {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+
             .docs-marquee {
               width: max-content;
               display: inline-flex;
@@ -438,26 +455,6 @@ Content-Type: application/json
             </div>
           </div>
         </section>
-
-        {/* Local hero heading animation */}
-        <style jsx>{`
-          .hero-docs-heading {
-            opacity: 0;
-            transform: translateY(14px);
-            animation: hero-docs-slide-up 0.85s ease-out forwards;
-          }
-
-          @keyframes hero-docs-slide-up {
-            0% {
-              opacity: 0;
-              transform: translateY(18px);
-            }
-            100% {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-        `}</style>
 
         {/* Personas */}
         <section className="space-y-6">
