@@ -201,6 +201,95 @@ export default function PublicDocsLanding() {
         <ThemeSwitcher />
       </div>
       <div className="mx-auto flex max-w-6xl flex-col gap-16 px-4 pb-24 pt-16 sm:px-6 lg:px-8">
+        <style jsx>{`
+          @keyframes docs-marquee {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+
+          .hero-docs-heading {
+            opacity: 0;
+            transform: translateY(14px);
+            animation: hero-docs-slide-up 0.85s ease-out forwards;
+          }
+
+          @keyframes hero-docs-slide-up {
+            0% {
+              opacity: 0;
+              transform: translateY(18px);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .docs-marquee {
+            width: max-content;
+            display: inline-flex;
+            gap: 24px;
+            animation: docs-marquee 16s linear infinite;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .docs-marquee {
+              animation: none;
+            }
+          }
+        `}</style>
+
+        {/* Live rates ticker */}
+        <div className="w-full rounded-2xl border border-slate-200 bg-white/70 p-3 text-xs text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">Live rates</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">(1 USDC → fiat)</span>
+            </div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-400">
+              {ratesUpdatedAt ? `Updated: ${new Date(ratesUpdatedAt).toLocaleTimeString()}` : ""}
+            </div>
+          </div>
+
+          {ratesError && (
+            <div className="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2 text-[11px] text-rose-700 dark:text-rose-200">
+              {ratesError}
+            </div>
+          )}
+
+          <div className="mt-2 overflow-hidden">
+            {ratesLoading ? (
+              <div className="py-2 text-[11px] text-slate-500 dark:text-slate-400">Loading…</div>
+            ) : rates.length === 0 ? (
+              <div className="py-2 text-[11px] text-slate-500 dark:text-slate-400">No rates returned.</div>
+            ) : (
+              <div className="docs-marquee" aria-label="Live rates ticker">
+                <div className="inline-flex gap-6 pr-6">
+                  {rates.map((r) => (
+                    <div key={r.currency} className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <span className="text-[11px]">{currencyFlagByCode[r.currency] || ""}</span>
+                      <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{r.currency}</span>
+                      <span className="text-[11px] text-slate-900 dark:text-slate-100">{Number(r.rate).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="inline-flex gap-6 pr-6" aria-hidden="true">
+                  {rates.map((r) => (
+                    <div key={`dup-${r.currency}`} className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <span className="text-[11px]">{currencyFlagByCode[r.currency] || ""}</span>
+                      <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{r.currency}</span>
+                      <span className="text-[11px] text-slate-900 dark:text-slate-100">{Number(r.rate).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Hero */}
         <section className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-xl space-y-6">
@@ -246,95 +335,6 @@ export default function PublicDocsLanding() {
                 <Globe2 className="h-3.5 w-3.5 text-blue-500" />
                 <span>Pay anywhere, settle everywhere</span>
               </div>
-            </div>
-          </div>
-
-          <style jsx>{`
-            @keyframes docs-marquee {
-              0% {
-                transform: translateX(0);
-              }
-              100% {
-                transform: translateX(-50%);
-              }
-            }
-
-            .hero-docs-heading {
-              opacity: 0;
-              transform: translateY(14px);
-              animation: hero-docs-slide-up 0.85s ease-out forwards;
-            }
-
-            @keyframes hero-docs-slide-up {
-              0% {
-                opacity: 0;
-                transform: translateY(18px);
-              }
-              100% {
-                opacity: 1;
-                transform: translateY(0);
-              }
-            }
-
-            .docs-marquee {
-              width: max-content;
-              display: inline-flex;
-              gap: 24px;
-              animation: docs-marquee 16s linear infinite;
-            }
-
-            @media (prefers-reduced-motion: reduce) {
-              .docs-marquee {
-                animation: none;
-              }
-            }
-          `}</style>
-
-          {/* Live rates ticker */}
-          <div className="w-full rounded-2xl border border-slate-200 bg-white/70 p-3 text-xs text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold">Live rates</span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400">(1 USDC → fiat)</span>
-              </div>
-              <div className="text-[10px] text-slate-500 dark:text-slate-400">
-                {ratesUpdatedAt ? `Updated: ${new Date(ratesUpdatedAt).toLocaleTimeString()}` : ""}
-              </div>
-            </div>
-
-            {ratesError && (
-              <div className="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2 text-[11px] text-rose-700 dark:text-rose-200">
-                {ratesError}
-              </div>
-            )}
-
-            <div className="mt-2 overflow-hidden">
-              {ratesLoading ? (
-                <div className="py-2 text-[11px] text-slate-500 dark:text-slate-400">Loading…</div>
-              ) : rates.length === 0 ? (
-                <div className="py-2 text-[11px] text-slate-500 dark:text-slate-400">No rates returned.</div>
-              ) : (
-                <div className="docs-marquee" aria-label="Live rates ticker">
-                  <div className="inline-flex gap-6 pr-6">
-                    {rates.map((r) => (
-                      <div key={r.currency} className="inline-flex items-center gap-2 whitespace-nowrap">
-                        <span className="text-[11px]">{currencyFlagByCode[r.currency] || ""}</span>
-                        <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{r.currency}</span>
-                        <span className="text-[11px] text-slate-900 dark:text-slate-100">{Number(r.rate).toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="inline-flex gap-6 pr-6" aria-hidden="true">
-                    {rates.map((r) => (
-                      <div key={`dup-${r.currency}`} className="inline-flex items-center gap-2 whitespace-nowrap">
-                        <span className="text-[11px]">{currencyFlagByCode[r.currency] || ""}</span>
-                        <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{r.currency}</span>
-                        <span className="text-[11px] text-slate-900 dark:text-slate-100">{Number(r.rate).toLocaleString()}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
