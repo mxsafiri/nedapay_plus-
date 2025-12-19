@@ -290,19 +290,33 @@ app.post('/webhooks/nedapay', async (req, res) => {
 
 ## Supported Currencies
 
+## Supported Coverage (Countries + Chains)
+
+For the always-up-to-date, canonical list, see:
+
+- `SUPPORTED_COVERAGE.md` in this repository
+- `GET /api/v1/currencies` (supported payout currencies)
+- `GET /api/networks` (enabled blockchain networks)
+
 ### Destination Currencies (Fiat)
 
-| Currency | Code | Country/Region | Settlement Time |
-|----------|------|----------------|----------------|
-| Nigerian Naira | NGN | 🇳🇬 Nigeria | 1-2 minutes |
-| Kenyan Shilling | KES | 🇰🇪 Kenya | 1-2 minutes |
-| Ugandan Shilling | UGX | 🇺🇬 Uganda | 1-2 minutes |
-| Tanzanian Shilling | TZS | 🇹🇿 Tanzania | 1-2 minutes |
-| Ghanaian Cedi | GHS | 🇬🇭 Ghana | 1-2 minutes |
-| Malawian Kwacha | MWK | 🇲🇼 Malawi | 1-2 minutes |
-| West African CFA | XOF | 🌍 8 West African countries | 1-2 minutes |
-| Indian Rupee | INR | 🇮🇳 India | 1-2 minutes |
-| Brazilian Real | BRL | 🇧🇷 Brazil | 1-2 minutes |
+To retrieve supported payout destinations, call:
+
+```http
+GET /api/v1/currencies
+```
+
+Response shape (example):
+
+```json
+{
+  "success": true,
+  "currencies": [
+    { "code": "NGN", "name": "Nigerian Naira", "country": "Nigeria", "flag": "🇳🇬" }
+  ],
+  "count": 1
+}
+```
 
 ### Source Tokens
 
@@ -311,8 +325,29 @@ app.post('/webhooks/nedapay', async (req, res) => {
 
 ### Blockchain Networks
 
-- **Base** - Low-cost Ethereum L2 (recommended)
-- **Hedera** - Coming soon (ultra-low fees)
+To retrieve enabled settlement networks, call:
+
+```http
+GET /api/networks
+```
+
+Response shape (example):
+
+```json
+{
+  "networks": [
+    {
+      "id": "1",
+      "identifier": "base-sepolia",
+      "network_type": "evm",
+      "priority": 2,
+      "is_testnet": true,
+      "is_enabled": true,
+      "fee": 0.03
+    }
+  ]
+}
+```
 
 ---
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +20,89 @@ import {
 } from "lucide-react";
 import { ApiPlayground } from "@/components/docs/api-playground";
 
+type RatesTickerItem = {
+  currency: string;
+  rate: string;
+  estimatedPayout: string;
+};
+
+type SupportedCurrency = {
+  code: string;
+  flag?: string;
+};
+
 export default function DocsV2Page() {
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+
+  const [rates, setRates] = useState<RatesTickerItem[]>([]);
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState<string | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(true);
+  const [ratesError, setRatesError] = useState<string | null>(null);
+
+  const [supportedCurrencies, setSupportedCurrencies] = useState<SupportedCurrency[]>([]);
+
+  const currencyFlagByCode = supportedCurrencies.reduce<Record<string, string | undefined>>((acc, c) => {
+    acc[c.code?.toUpperCase()] = c.flag;
+    return acc;
+  }, {});
+
+  useEffect(() => {
+    let mounted = true;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    async function loadRates() {
+      try {
+        setRatesLoading(true);
+        setRatesError(null);
+
+        const res = await fetch("/api/v1/rates?amount=1&token=USDC");
+        if (!res.ok) throw new Error("Failed to load live rates");
+
+        const json = await res.json();
+        if (!mounted) return;
+
+        setRates(Array.isArray(json?.rates) ? json.rates : []);
+        setRatesUpdatedAt(typeof json?.updatedAt === "string" ? json.updatedAt : null);
+      } catch (err: any) {
+        if (!mounted) return;
+        setRatesError(err?.message || "Failed to load live rates");
+      } finally {
+        if (!mounted) return;
+        setRatesLoading(false);
+      }
+    }
+
+    loadRates();
+    interval = setInterval(loadRates, 60_000);
+
+    return () => {
+      mounted = false;
+      if (interval) clearInterval(interval);
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadCurrencyMeta() {
+      try {
+        const res = await fetch("/api/v1/currencies");
+        if (!res.ok) return;
+
+        const json = await res.json();
+        if (!mounted) return;
+        setSupportedCurrencies(Array.isArray(json?.currencies) ? json.currencies : []);
+      } catch {
+        // Ignore metadata failures; ticker still works without flags
+      }
+    }
+
+    loadCurrencyMeta();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const steps = [
     {
@@ -87,6 +167,79 @@ export default function DocsV2Page() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
+        <style jsx>{`
+          @keyframes docs-v2-marquee {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+
+          .docs-v2-marquee {
+            width: max-content;
+            display: inline-flex;
+            gap: 20px;
+            animation: docs-v2-marquee 14s linear infinite;
+          }
+
+          @media (prefers-reduced-motion: reduce) {
+            .docs-v2-marquee {
+              animation: none;
+            }
+          }
+        `}</style>
+
+        <div className="mb-6 rounded-xl border bg-card/60 p-4 shadow-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">Live rates</span>
+              <Badge variant="secondary" className="text-[10px]">
+                1 USDC → fiat
+              </Badge>
+            </div>
+            <div className="text-[11px] text-muted-foreground">
+              {ratesUpdatedAt ? `Updated: ${new Date(ratesUpdatedAt).toLocaleTimeString()}` : ""}
+            </div>
+          </div>
+
+          {ratesError && (
+            <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+              {ratesError}
+            </div>
+          )}
+
+          <div className="mt-3 overflow-hidden">
+            {ratesLoading ? (
+              <div className="py-1 text-xs text-muted-foreground">Loading…</div>
+            ) : rates.length === 0 ? (
+              <div className="py-1 text-xs text-muted-foreground">No rates returned.</div>
+            ) : (
+              <div className="docs-v2-marquee" aria-label="Live rates ticker">
+                <div className="inline-flex gap-5 pr-5">
+                  {rates.map((r) => (
+                    <div key={r.currency} className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <span className="text-xs">{currencyFlagByCode[r.currency] || ""}</span>
+                      <span className="font-mono text-xs text-primary">{r.currency}</span>
+                      <span className="text-xs text-foreground">{Number(r.rate).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="inline-flex gap-5 pr-5" aria-hidden="true">
+                  {rates.map((r) => (
+                    <div key={`dup-${r.currency}`} className="inline-flex items-center gap-2 whitespace-nowrap">
+                      <span className="text-xs">{currencyFlagByCode[r.currency] || ""}</span>
+                      <span className="font-mono text-xs text-primary">{r.currency}</span>
+                      <span className="text-xs text-foreground">{Number(r.rate).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Sidebar - Steps Navigation */}
           <div className="lg:col-span-3">

@@ -645,6 +645,7 @@ For more detailed information, see:
 - **[PRISMA_SETUP.md](./PRISMA_SETUP.md)** - Database setup guide
 - **[EMAIL_SETUP.md](./EMAIL_SETUP.md)** - Email service configuration
 - **[GITHUB_SETUP.md](./GITHUB_SETUP.md)** - GitHub repository setup
+- **[SUPPORTED_COVERAGE.md](./SUPPORTED_COVERAGE.md)** - Supported payout countries/currencies and supported blockchain networks
 - **[docs/database-schema.md](./docs/database-schema.md)** - Full schema documentation
 
 ---

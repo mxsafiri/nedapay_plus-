@@ -2,11 +2,32 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, ShieldCheck, Banknote, Network, Code2, Globe2 } from "lucide-react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 
 type TrackId = "banks" | "fintechs" | "psps";
+
+type SupportedCurrency = {
+  code: string;
+  name?: string;
+  country?: string;
+  flag?: string;
+};
+
+type SupportedNetwork = {
+  id: string;
+  identifier: string;
+  network_type: "evm" | "hedera" | string;
+  is_testnet?: boolean;
+  priority?: number;
+};
+
+type RatesTickerItem = {
+  currency: string;
+  rate: string;
+  estimatedPayout: string;
+};
 
 export default function PublicDocsLanding() {
   const router = useRouter();
@@ -14,6 +35,99 @@ export default function PublicDocsLanding() {
   const [activeGlance, setActiveGlance] = useState<
     "order" | "rails" | "compliance" | null
   >("order");
+
+  const [supportedCurrencies, setSupportedCurrencies] = useState<SupportedCurrency[]>([]);
+  const [supportedNetworks, setSupportedNetworks] = useState<SupportedNetwork[]>([]);
+  const [coverageLoading, setCoverageLoading] = useState(true);
+  const [coverageError, setCoverageError] = useState<string | null>(null);
+
+  const [rates, setRates] = useState<RatesTickerItem[]>([]);
+  const [ratesUpdatedAt, setRatesUpdatedAt] = useState<string | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(true);
+  const [ratesError, setRatesError] = useState<string | null>(null);
+
+  const currencyFlagByCode = supportedCurrencies.reduce<Record<string, string | undefined>>((acc, c) => {
+    acc[c.code?.toUpperCase()] = c.flag;
+    return acc;
+  }, {});
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadCoverage() {
+      try {
+        setCoverageLoading(true);
+        setCoverageError(null);
+
+        const [currenciesRes, networksRes] = await Promise.all([
+          fetch("/api/v1/currencies"),
+          fetch("/api/networks"),
+        ]);
+
+        if (!currenciesRes.ok) {
+          throw new Error("Failed to load supported currencies");
+        }
+        if (!networksRes.ok) {
+          throw new Error("Failed to load supported networks");
+        }
+
+        const currenciesJson = await currenciesRes.json();
+        const networksJson = await networksRes.json();
+
+        if (!mounted) return;
+
+        setSupportedCurrencies(Array.isArray(currenciesJson?.currencies) ? currenciesJson.currencies : []);
+        setSupportedNetworks(Array.isArray(networksJson?.networks) ? networksJson.networks : []);
+      } catch (err: any) {
+        if (!mounted) return;
+        setCoverageError(err?.message || "Failed to load supported coverage");
+      } finally {
+        if (!mounted) return;
+        setCoverageLoading(false);
+      }
+    }
+
+    loadCoverage();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    async function loadRates() {
+      try {
+        setRatesLoading(true);
+        setRatesError(null);
+
+        const res = await fetch("/api/v1/rates?amount=1&token=USDC");
+        if (!res.ok) throw new Error("Failed to load live rates");
+
+        const json = await res.json();
+        if (!mounted) return;
+
+        const nextRates = Array.isArray(json?.rates) ? json.rates : [];
+        setRates(nextRates);
+        setRatesUpdatedAt(typeof json?.updatedAt === "string" ? json.updatedAt : null);
+      } catch (err: any) {
+        if (!mounted) return;
+        setRatesError(err?.message || "Failed to load live rates");
+      } finally {
+        if (!mounted) return;
+        setRatesLoading(false);
+      }
+    }
+
+    loadRates();
+    interval = setInterval(loadRates, 60_000);
+
+    return () => {
+      mounted = false;
+      if (interval) clearInterval(interval);
+    };
+  }, []);
 
   const personas = [
     {
@@ -132,6 +246,78 @@ export default function PublicDocsLanding() {
                 <Globe2 className="h-3.5 w-3.5 text-blue-500" />
                 <span>Pay anywhere, settle everywhere</span>
               </div>
+            </div>
+          </div>
+
+          <style jsx>{`
+            @keyframes docs-marquee {
+              0% {
+                transform: translateX(0);
+              }
+              100% {
+                transform: translateX(-50%);
+              }
+            }
+
+            .docs-marquee {
+              width: max-content;
+              display: inline-flex;
+              gap: 24px;
+              animation: docs-marquee 16s linear infinite;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+              .docs-marquee {
+                animation: none;
+              }
+            }
+          `}</style>
+
+          {/* Live rates ticker */}
+          <div className="w-full rounded-2xl border border-slate-200 bg-white/70 p-3 text-xs text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900/40 dark:text-slate-200">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold">Live rates</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400">(1 USDC → fiat)</span>
+              </div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                {ratesUpdatedAt ? `Updated: ${new Date(ratesUpdatedAt).toLocaleTimeString()}` : ""}
+              </div>
+            </div>
+
+            {ratesError && (
+              <div className="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-2 text-[11px] text-rose-700 dark:text-rose-200">
+                {ratesError}
+              </div>
+            )}
+
+            <div className="mt-2 overflow-hidden">
+              {ratesLoading ? (
+                <div className="py-2 text-[11px] text-slate-500 dark:text-slate-400">Loading…</div>
+              ) : rates.length === 0 ? (
+                <div className="py-2 text-[11px] text-slate-500 dark:text-slate-400">No rates returned.</div>
+              ) : (
+                <div className="docs-marquee" aria-label="Live rates ticker">
+                  <div className="inline-flex gap-6 pr-6">
+                    {rates.map((r) => (
+                      <div key={r.currency} className="inline-flex items-center gap-2 whitespace-nowrap">
+                        <span className="text-[11px]">{currencyFlagByCode[r.currency] || ""}</span>
+                        <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{r.currency}</span>
+                        <span className="text-[11px] text-slate-900 dark:text-slate-100">{Number(r.rate).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="inline-flex gap-6 pr-6" aria-hidden="true">
+                    {rates.map((r) => (
+                      <div key={`dup-${r.currency}`} className="inline-flex items-center gap-2 whitespace-nowrap">
+                        <span className="text-[11px]">{currencyFlagByCode[r.currency] || ""}</span>
+                        <span className="font-mono text-[11px] text-emerald-600 dark:text-emerald-300">{r.currency}</span>
+                        <span className="text-[11px] text-slate-900 dark:text-slate-100">{Number(r.rate).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -543,6 +729,93 @@ Authorization: Bearer YOUR_PROVIDER_KEY
 // 3. Mark payout as settled in your system
 // 4. Emit events or update customer-facing UIs`}
               </pre>
+            </div>
+          </div>
+        </section>
+
+        {/* Supported coverage */}
+        <section className="space-y-4 rounded-2xl border border-slate-800 bg-slate-900/40 p-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-50 sm:text-base">
+                Supported countries & chains
+              </h2>
+              <p className="max-w-2xl text-xs text-slate-600 dark:text-slate-400">
+                This list is loaded live from NedaPay APIs. Do not hardcode supported coverage.
+              </p>
+            </div>
+            <Link
+              href="/protected/docs-v2"
+              className="inline-flex items-center gap-2 text-xs font-medium text-emerald-300 hover:text-emerald-200"
+            >
+              View full API docs
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+
+          {coverageError && (
+            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-4 text-xs text-rose-200">
+              {coverageError}
+            </div>
+          )}
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4">
+              <p className="text-[11px] font-medium text-slate-200">Supported payout currencies</p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Lists the fiat currencies/countries you can pay out to.
+              </p>
+              <pre className="mt-3 overflow-x-auto rounded-lg bg-slate-950/70 p-3 text-[10px] text-slate-100">{`GET /api/v1/currencies`}</pre>
+              <div className="mt-3 space-y-1 text-[11px] text-slate-300">
+                {coverageLoading ? (
+                  <p className="text-slate-400">Loading…</p>
+                ) : supportedCurrencies.length === 0 ? (
+                  <p className="text-slate-400">No currencies returned.</p>
+                ) : (
+                  supportedCurrencies.slice(0, 12).map((c) => (
+                    <div key={c.code} className="flex items-center justify-between gap-3">
+                      <span className="truncate">
+                        <span className="mr-2">{c.flag || ""}</span>
+                        {c.name || c.country || c.code}
+                      </span>
+                      <span className="font-mono text-[10px] text-slate-200">{c.code}</span>
+                    </div>
+                  ))
+                )}
+                {!coverageLoading && supportedCurrencies.length > 12 && (
+                  <p className="pt-1 text-[10px] text-slate-500">
+                    Showing 12 of {supportedCurrencies.length}. Query the endpoint for the full list.
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-800 bg-slate-950/30 p-4">
+              <p className="text-[11px] font-medium text-slate-200">Supported blockchain networks</p>
+              <p className="mt-1 text-[11px] text-slate-400">
+                Lists enabled settlement networks (e.g., Base/EVM and Hedera).
+              </p>
+              <pre className="mt-3 overflow-x-auto rounded-lg bg-slate-950/70 p-3 text-[10px] text-slate-100">{`GET /api/networks`}</pre>
+              <div className="mt-3 space-y-1 text-[11px] text-slate-300">
+                {coverageLoading ? (
+                  <p className="text-slate-400">Loading…</p>
+                ) : supportedNetworks.length === 0 ? (
+                  <p className="text-slate-400">No networks returned.</p>
+                ) : (
+                  supportedNetworks.slice(0, 12).map((n) => (
+                    <div key={`${n.id}:${n.identifier}`} className="flex items-center justify-between gap-3">
+                      <span className="truncate">{n.identifier}</span>
+                      <span className="font-mono text-[10px] text-slate-200">
+                        {n.network_type}{n.is_testnet ? "-test" : ""}
+                      </span>
+                    </div>
+                  ))
+                )}
+                {!coverageLoading && supportedNetworks.length > 12 && (
+                  <p className="pt-1 text-[10px] text-slate-500">
+                    Showing 12 of {supportedNetworks.length}. Query the endpoint for the full list.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </section>
