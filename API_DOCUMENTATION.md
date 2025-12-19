@@ -124,7 +124,7 @@ curl -X POST https://api.nedapayplus.xyz/api/v1/payment-orders \\
 {
   "success": false,
   "error": "Currency UGX not supported",
-  "supportedCurrencies": ["NGN", "KES", "UGX", "TZS", "GHS", "MWK", "XOF", "INR", "BRL"]
+  "hint": "Query GET /api/v1/currencies for the always-up-to-date supported list"
 }
 \`\`\`
 
