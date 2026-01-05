@@ -62,8 +62,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { filePaths } = body;
+    const { filePaths, documentNotes } = body;
     // filePaths: { incorporation: string, license: string, shareholderDeclaration?: string, ... }
+    // documentNotes: { incorporation: string, license: string, ... } - optional notes for each document
 
     if (!filePaths || !filePaths.incorporation || !filePaths.license) {
       return NextResponse.json({ 
@@ -98,6 +99,17 @@ export async function POST(request: NextRequest) {
 
     let kybProfile;
 
+    // Prepare notes object (filter out empty notes)
+    const notes: Record<string, string> = {};
+    if (documentNotes) {
+      for (const [key, value] of Object.entries(documentNotes)) {
+        if (value && typeof value === 'string' && value.trim()) {
+          notes[key] = value.trim();
+        }
+      }
+    }
+    console.log('📝 Document notes:', Object.keys(notes).length > 0 ? notes : 'None provided');
+
     if (existingKYB) {
       // Update existing KYB profile
       console.log('🔄 Updating existing KYB profile for user:', user.id);
@@ -109,6 +121,7 @@ export async function POST(request: NextRequest) {
           shareholder_declaration_url: documents.shareholderDeclaration || (existingKYB as any).shareholder_declaration_url,
           aml_policy_url: documents.amlPolicy || (existingKYB as any).aml_policy_url,
           data_protection_policy_url: documents.dataProtectionPolicy || (existingKYB as any).data_protection_policy_url,
+          document_notes: Object.keys(notes).length > 0 ? notes : (existingKYB as any).document_notes,
           updated_at: new Date()
         }
       });
@@ -130,6 +143,7 @@ export async function POST(request: NextRequest) {
           shareholder_declaration_url: documents.shareholderDeclaration || null,
           aml_policy_url: documents.amlPolicy || null,
           data_protection_policy_url: documents.dataProtectionPolicy || null,
+          document_notes: Object.keys(notes).length > 0 ? notes : {},
           created_at: new Date(),
           updated_at: new Date()
         }

@@ -54,6 +54,19 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     amlPolicy: null,
     dataProtectionPolicy: null,
   });
+  const [kybNotes, setKybNotes] = useState<{
+    incorporation: string;
+    license: string;
+    shareholderDeclaration: string;
+    amlPolicy: string;
+    dataProtectionPolicy: string;
+  }>({
+    incorporation: '',
+    license: '',
+    shareholderDeclaration: '',
+    amlPolicy: '',
+    dataProtectionPolicy: '',
+  });
 
   const _supabase = createClient();
 
@@ -259,6 +272,10 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
     }
   };
 
+  const handleNoteChange = (type: 'incorporation' | 'license' | 'shareholderDeclaration' | 'amlPolicy' | 'dataProtectionPolicy', note: string) => {
+    setKybNotes(prev => ({ ...prev, [type]: note }));
+  };
+
   const handleKYBSubmit = async () => {
     // Check each document individually for better error messages
     const missingDocs = [];
@@ -337,7 +354,10 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
           'Content-Type': 'application/json',
           'x-user-id': user.id,
         },
-        body: JSON.stringify({ filePaths }),
+        body: JSON.stringify({ 
+          filePaths,
+          documentNotes: kybNotes 
+        }),
       });
 
       if (!finalizeResponse.ok) {
@@ -420,7 +440,7 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
             <div className="space-y-3">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Verification Status</Label>
               <div className="px-4 py-3 bg-muted/40 rounded-xl border border-border/30 flex items-center">
-                {getStatusBadge(profile?.verification_status)}
+                {getStatusBadge(kybStatus)}
               </div>
             </div>
           </div>
@@ -574,6 +594,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                     label="Certificate of Incorporation"
                     file={kybFiles.incorporation}
                     onFileChange={(e) => handleFileUpload(e, 'incorporation')}
+                    note={kybNotes.incorporation}
+                    onNoteChange={(note) => handleNoteChange('incorporation', note)}
+                    notePlaceholder="e.g., Registration Certificate (equivalent)"
                   />
 
                   <FileUploadBox
@@ -581,6 +604,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                     label="Business License"
                     file={kybFiles.license}
                     onFileChange={(e) => handleFileUpload(e, 'license')}
+                    note={kybNotes.license}
+                    onNoteChange={(note) => handleNoteChange('license', note)}
+                    notePlaceholder="e.g., Trade License or Tax Certificate"
                   />
 
                   <FileUploadBox
@@ -588,6 +614,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                     label="Shareholder Declaration"
                     file={kybFiles.shareholderDeclaration}
                     onFileChange={(e) => handleFileUpload(e, 'shareholderDeclaration')}
+                    note={kybNotes.shareholderDeclaration}
+                    onNoteChange={(note) => handleNoteChange('shareholderDeclaration', note)}
+                    notePlaceholder="e.g., Ownership structure document"
                   />
 
                   <FileUploadBox
@@ -595,6 +624,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                     label="AML Policy"
                     file={kybFiles.amlPolicy}
                     onFileChange={(e) => handleFileUpload(e, 'amlPolicy')}
+                    note={kybNotes.amlPolicy}
+                    onNoteChange={(note) => handleNoteChange('amlPolicy', note)}
+                    notePlaceholder="e.g., Compliance policy document"
                   />
 
                   <FileUploadBox
@@ -602,6 +634,9 @@ export function ProfileSettings({ user, profile: initialProfile }: ProfileSettin
                     label="Data Protection Policy"
                     file={kybFiles.dataProtectionPolicy}
                     onFileChange={(e) => handleFileUpload(e, 'dataProtectionPolicy')}
+                    note={kybNotes.dataProtectionPolicy}
+                    onNoteChange={(note) => handleNoteChange('dataProtectionPolicy', note)}
+                    notePlaceholder="e.g., Privacy policy document"
                   />
                 </div>
 

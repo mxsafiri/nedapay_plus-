@@ -44,6 +44,7 @@ interface User {
     aml_policy_url?: string;
     data_protection_policy_url?: string;
     kyb_rejection_comment?: string;
+    document_notes?: Record<string, string>;
     created_at: string;
     updated_at: string;
   };
@@ -409,107 +410,132 @@ export function UserManagement() {
                   </p>
                   <div className="space-y-2 bg-muted/30 p-4 rounded-lg">
                     {/* Certificate of Incorporation */}
-                    <div className="flex items-center justify-between p-2 bg-background rounded border">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-blue-500" />
-                        <span className="text-sm font-medium">Certificate of Incorporation</span>
+                    <div className="p-2 bg-background rounded border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500" />
+                          <span className="text-sm font-medium">Certificate of Incorporation</span>
+                        </div>
+                        {selectedUser.kyb_profiles.certificate_of_incorporation_url ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8"
+                            onClick={() => window.open(selectedUser.kyb_profiles!.certificate_of_incorporation_url, '_blank')}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                        )}
                       </div>
-                      {selectedUser.kyb_profiles.certificate_of_incorporation_url ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8"
-                          onClick={() => window.open(selectedUser.kyb_profiles!.certificate_of_incorporation_url, '_blank')}
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          View
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                      {selectedUser.kyb_profiles.document_notes?.incorporation && (
+                        <p className="text-xs text-amber-600 mt-1 ml-4 italic">📝 {selectedUser.kyb_profiles.document_notes.incorporation}</p>
                       )}
                     </div>
 
                     {/* Business License */}
-                    <div className="flex items-center justify-between p-2 bg-background rounded border">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                        <span className="text-sm font-medium">Business License</span>
+                    <div className="p-2 bg-background rounded border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500" />
+                          <span className="text-sm font-medium">Business License</span>
+                        </div>
+                        {selectedUser.kyb_profiles.business_license_url ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8"
+                            onClick={() => window.open(selectedUser.kyb_profiles!.business_license_url, '_blank')}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                        )}
                       </div>
-                      {selectedUser.kyb_profiles.business_license_url ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8"
-                          onClick={() => window.open(selectedUser.kyb_profiles!.business_license_url, '_blank')}
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          View
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                      {selectedUser.kyb_profiles.document_notes?.license && (
+                        <p className="text-xs text-amber-600 mt-1 ml-4 italic">📝 {selectedUser.kyb_profiles.document_notes.license}</p>
                       )}
                     </div>
 
                     {/* Shareholder Declaration */}
-                    <div className="flex items-center justify-between p-2 bg-background rounded border">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-500" />
-                        <span className="text-sm font-medium">Shareholder Declaration</span>
+                    <div className="p-2 bg-background rounded border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-purple-500" />
+                          <span className="text-sm font-medium">Shareholder Declaration</span>
+                        </div>
+                        {selectedUser.kyb_profiles.shareholder_declaration_url ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8"
+                            onClick={() => window.open(selectedUser.kyb_profiles!.shareholder_declaration_url!, '_blank')}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                        )}
                       </div>
-                      {selectedUser.kyb_profiles.shareholder_declaration_url ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8"
-                          onClick={() => window.open(selectedUser.kyb_profiles!.shareholder_declaration_url!, '_blank')}
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          View
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                      {selectedUser.kyb_profiles.document_notes?.shareholderDeclaration && (
+                        <p className="text-xs text-amber-600 mt-1 ml-4 italic">📝 {selectedUser.kyb_profiles.document_notes.shareholderDeclaration}</p>
                       )}
                     </div>
 
                     {/* AML Policy */}
-                    <div className="flex items-center justify-between p-2 bg-background rounded border">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-orange-500" />
-                        <span className="text-sm font-medium">AML Policy</span>
+                    <div className="p-2 bg-background rounded border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-orange-500" />
+                          <span className="text-sm font-medium">AML Policy</span>
+                        </div>
+                        {selectedUser.kyb_profiles.aml_policy_url ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8"
+                            onClick={() => window.open(selectedUser.kyb_profiles!.aml_policy_url!, '_blank')}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                        )}
                       </div>
-                      {selectedUser.kyb_profiles.aml_policy_url ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8"
-                          onClick={() => window.open(selectedUser.kyb_profiles!.aml_policy_url!, '_blank')}
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          View
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                      {selectedUser.kyb_profiles.document_notes?.amlPolicy && (
+                        <p className="text-xs text-amber-600 mt-1 ml-4 italic">📝 {selectedUser.kyb_profiles.document_notes.amlPolicy}</p>
                       )}
                     </div>
 
                     {/* Data Protection Policy */}
-                    <div className="flex items-center justify-between p-2 bg-background rounded border">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                        <span className="text-sm font-medium">Data Protection Policy</span>
+                    <div className="p-2 bg-background rounded border">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-red-500" />
+                          <span className="text-sm font-medium">Data Protection Policy</span>
+                        </div>
+                        {selectedUser.kyb_profiles.data_protection_policy_url ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8"
+                            onClick={() => window.open(selectedUser.kyb_profiles!.data_protection_policy_url!, '_blank')}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View
+                          </Button>
+                        ) : (
+                          <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                        )}
                       </div>
-                      {selectedUser.kyb_profiles.data_protection_policy_url ? (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-8"
-                          onClick={() => window.open(selectedUser.kyb_profiles!.data_protection_policy_url!, '_blank')}
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          View
-                        </Button>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">Not Uploaded</Badge>
+                      {selectedUser.kyb_profiles.document_notes?.dataProtectionPolicy && (
+                        <p className="text-xs text-amber-600 mt-1 ml-4 italic">📝 {selectedUser.kyb_profiles.document_notes.dataProtectionPolicy}</p>
                       )}
                     </div>
                   </div>

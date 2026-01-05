@@ -1,5 +1,6 @@
 import { Label } from "@/components/ui/label";
-import { CheckCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { CheckCircle, MessageSquare } from "lucide-react";
 
 interface FileUploadBoxProps {
   id: string;
@@ -7,9 +8,21 @@ interface FileUploadBoxProps {
   file: File | null;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
+  note?: string;
+  onNoteChange?: (note: string) => void;
+  notePlaceholder?: string;
 }
 
-export function FileUploadBox({ id, label, file, onFileChange, required = true }: FileUploadBoxProps) {
+export function FileUploadBox({ 
+  id, 
+  label, 
+  file, 
+  onFileChange, 
+  required = true,
+  note = '',
+  onNoteChange,
+  notePlaceholder = "Add a note if this is an equivalent document..."
+}: FileUploadBoxProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id} className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
@@ -52,6 +65,19 @@ export function FileUploadBox({ id, label, file, onFileChange, required = true }
           )}
         </label>
       </div>
+      {/* Optional note field */}
+      {onNoteChange && (
+        <div className="flex items-center gap-2">
+          <MessageSquare className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <Input
+            type="text"
+            value={note}
+            onChange={(e) => onNoteChange(e.target.value)}
+            placeholder={notePlaceholder}
+            className="h-9 text-sm bg-muted/30 border-border/30 placeholder:text-muted-foreground/60"
+          />
+        </div>
+      )}
     </div>
   );
 }

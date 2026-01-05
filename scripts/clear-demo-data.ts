@@ -38,33 +38,20 @@ async function clearDemoData() {
     console.log(`  Sender Profiles: ${beforeCounts.senderProfiles}`);
     console.log(`  Provider Profiles: ${beforeCounts.providerProfiles}\n`);
 
-    // Identify demo users by email pattern
-    const demoUserEmails = [
-      'demo@crdbbank.co.tz',
-      'demo@nmbbank.co.tz',
-      'demo@mufindibank.co.tz',
-      'demo@thunes.com',
-      'demo@mpesa.co.tz',
-      'demo@tigopesamobility.com'
-    ];
-
-    // Find demo users
+    // Find demo/test users by email pattern
     const demoUsers = await prisma.users.findMany({
       where: {
         OR: [
-          { email: { in: demoUserEmails } },
-          { email: { contains: 'demo@' } }
+          { email: { contains: 'demo@' } },
+          { email: { startsWith: 'demo' } },
+          { email: { startsWith: 'test-' } },
+          { email: { contains: 'test@' } }
         ]
       },
       select: { id: true, email: true }
     });
 
-    if (demoUsers.length === 0) {
-      console.log('✅ No demo users found. Database is clean!\n');
-      return;
-    }
-
-    console.log(`🎯 Found ${demoUsers.length} demo users:\n`);
+    console.log(`🎯 Found ${demoUsers.length} demo/test users:\n`);
     demoUsers.forEach(user => console.log(`  - ${user.email}`));
     console.log('');
 
@@ -87,16 +74,32 @@ async function clearDemoData() {
     });
     const demoProviderProfileIds = demoProviderProfiles.map(p => p.id);
 
-    // 1. Delete payment orders (and their related transaction logs will cascade)
-    const deletedOrders = await prisma.payment_orders.deleteMany({
-      where: {
-        OR: [
-          { sender_profile_payment_orders: { in: demoSenderProfileIds } },
-          { assigned_psp_id: { in: demoProviderProfileIds } }
-        ]
-      }
-    });
-    console.log(`  ✓ Deleted ${deletedOrders.count} payment orders (and related transaction logs)`);
+    // 0. First, clear ALL payment orders - they're all test data
+    // Delete related transaction logs first
+    const deletedTxLogs = await prisma.transaction_logs.deleteMany({});
+    console.log(`  ✓ Deleted ${deletedTxLogs.count} transaction logs`);
+
+    // Delete payment webhooks
+    const deletedWebhooks = await prisma.payment_webhooks.deleteMany({});
+    console.log(`  ✓ Deleted ${deletedWebhooks.count} payment webhooks`);
+
+    // Delete receive addresses (linked to payment orders)
+    const deletedReceiveAddresses = await prisma.receive_addresses.deleteMany({});
+    console.log(`  ✓ Deleted ${deletedReceiveAddresses.count} receive addresses`);
+
+    // Delete all payment orders
+    const deletedAllOrders = await prisma.payment_orders.deleteMany({});
+    console.log(`  ✓ Deleted ${deletedAllOrders.count} payment orders`);
+
+    // Delete lock payment orders
+    const deletedLockOrders = await prisma.lock_payment_orders.deleteMany({});
+    console.log(`  ✓ Deleted ${deletedLockOrders.count} lock payment orders`);
+
+    // If no demo users, we're done after clearing orders
+    if (demoUsers.length === 0) {
+      console.log('\n✅ All test orders cleared. No demo users to remove.\n');
+      return;
+    }
 
     // 2. Delete API keys (using profile IDs)
     const deletedApiKeys = await prisma.api_keys.deleteMany({

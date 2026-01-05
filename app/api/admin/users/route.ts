@@ -65,6 +65,7 @@ export async function GET(request: NextRequest) {
             aml_policy_url: true,
             data_protection_policy_url: true,
             kyb_rejection_comment: true,
+            document_notes: true,
             created_at: true,
             updated_at: true
           }
