@@ -33,12 +33,7 @@ export async function GET(request: NextRequest) {
         amount_paid: true,
         psp_commission: true,
         assigned_psp_id: true,
-        updated_at: true,
-        provider_profiles: {
-          select: {
-            trading_name: true
-          }
-        }
+        updated_at: true
       },
       orderBy: { updated_at: 'asc' }
     });
@@ -54,12 +49,7 @@ export async function GET(request: NextRequest) {
         amount_paid: true,
         psp_commission: true,
         assigned_psp_id: true,
-        updated_at: true,
-        provider_profiles: {
-          select: {
-            trading_name: true
-          }
-        }
+        updated_at: true
       },
       orderBy: { updated_at: 'desc' },
       take: 20
@@ -80,13 +70,23 @@ export async function GET(request: NextRequest) {
         psp_commission: true,
         settlement_tx_hash: true,
         settled_at: true,
-        provider_profiles: {
-          select: {
-            trading_name: true
-          }
-        }
+        assigned_psp_id: true
       }
     });
+
+    // Fetch provider names for display
+    const providerIds = [...new Set([
+      ...pendingSettlements.map(o => o.assigned_psp_id),
+      ...failedSettlements.map(o => o.assigned_psp_id),
+      ...todaySettlements.map(o => o.assigned_psp_id)
+    ].filter(Boolean))];
+
+    const providers = providerIds.length > 0 ? await prisma.provider_profiles.findMany({
+      where: { id: { in: providerIds as string[] } },
+      select: { id: true, trading_name: true }
+    }) : [];
+
+    const providerMap = new Map(providers.map(p => [p.id, p.trading_name]));
 
     // Calculate stats
     const pendingAmount = pendingSettlements.reduce(
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     // Group by provider
     const pendingByProvider = pendingSettlements.reduce((acc, order) => {
       const providerId = order.assigned_psp_id || 'unassigned';
-      const providerName = order.provider_profiles?.trading_name || 'Unknown';
+      const providerName = order.assigned_psp_id ? providerMap.get(order.assigned_psp_id) || 'Unknown' : 'Unassigned';
       
       if (!acc[providerId]) {
         acc[providerId] = {
@@ -162,13 +162,13 @@ export async function GET(request: NextRequest) {
         pendingByProvider: Object.values(pendingByProvider),
         failedSettlements: failedSettlements.map(order => ({
           orderId: order.id,
-          providerName: order.provider_profiles?.trading_name || 'Unknown',
+          providerName: order.assigned_psp_id ? providerMap.get(order.assigned_psp_id) || 'Unknown' : 'Unassigned',
           amount: Number(order.amount_paid) + Number(order.psp_commission),
           failedAt: order.updated_at
         })),
         recentSettlements: todaySettlements.slice(0, 10).map(order => ({
           orderId: order.id,
-          providerName: order.provider_profiles?.trading_name || 'Unknown',
+          providerName: order.assigned_psp_id ? providerMap.get(order.assigned_psp_id) || 'Unknown' : 'Unassigned',
           amount: Number(order.amount_paid) + Number(order.psp_commission),
           txHash: order.settlement_tx_hash,
           settledAt: order.settled_at
