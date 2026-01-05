@@ -22,19 +22,9 @@ export async function settleProviderOrder(orderId: string): Promise<SettlementRe
   console.log(`💰 Starting settlement for order ${orderId}...`);
   
   try {
-    // Get order with provider info
+    // Get order
     const order = await prisma.payment_orders.findUnique({
-      where: { id: orderId },
-      include: {
-        provider_profiles: {
-          select: {
-            id: true,
-            trading_name: true,
-            treasury_accounts: true,
-            user_provider_profile: true
-          }
-        }
-      }
+      where: { id: orderId }
     });
 
     if (!order) {
@@ -59,7 +49,17 @@ export async function settleProviderOrder(orderId: string): Promise<SettlementRe
       throw new Error('Order has no assigned provider');
     }
 
-    const provider = order.provider_profiles;
+    // Fetch provider separately
+    const provider = await prisma.provider_profiles.findUnique({
+      where: { id: order.assigned_psp_id },
+      select: {
+        id: true,
+        trading_name: true,
+        treasury_accounts: true,
+        user_provider_profile: true
+      }
+    });
+
     if (!provider) {
       throw new Error('Provider not found for order');
     }
